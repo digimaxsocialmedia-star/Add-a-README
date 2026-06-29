@@ -86,6 +86,16 @@ export interface AccountSummary {
   totalCampaigns: number;
 }
 
+export interface NewCampaignInput {
+  name: string;
+  objective: Objective;
+  dailyBudget: number;
+  audience: string;
+  headline: string;
+  primaryText: string;
+  creativeType: CreativeType;
+}
+
 export interface SeriesPoint extends DailyPoint {
   roas: number;
   ctr: number;

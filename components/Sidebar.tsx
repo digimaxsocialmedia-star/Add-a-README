@@ -19,7 +19,7 @@ const NAV = [
   { href: "/ai-insights", label: "AI Insights", icon: Sparkles },
 ];
 
-export function Sidebar() {
+export function Sidebar({ mode = "demo" }: { mode?: "live" | "demo" }) {
   const pathname = usePathname();
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-ink-900 text-slate-300 lg:flex">
@@ -54,8 +54,13 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-ink-700 px-6 py-4 text-xs text-slate-400">
-        Demo mode · mock data
+      <div className="flex items-center gap-2 border-t border-ink-700 px-6 py-4 text-xs text-slate-400">
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${
+            mode === "live" ? "bg-emerald-400" : "bg-amber-400"
+          }`}
+        />
+        {mode === "live" ? "Live · Meta Marketing API" : "Demo · mock data"}
       </div>
     </aside>
   );

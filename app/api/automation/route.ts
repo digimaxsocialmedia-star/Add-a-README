@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getCampaigns, setCampaignStatus } from "@/lib/meta/client";
+import {
+  getCampaigns,
+  setCampaignStatus,
+  updateCampaignDailyBudget,
+} from "@/lib/meta/client";
 import { evaluate } from "@/lib/automation/engine";
 import { getStore } from "@/lib/mock/store";
 import type { AutomationRule } from "@/lib/types";
@@ -8,9 +12,19 @@ export const dynamic = "force-dynamic";
 
 async function snapshot() {
   const store = getStore();
-  const campaigns = await getCampaigns();
-  const evaluations = evaluate(campaigns, store.rules);
-  return { rules: store.rules, evaluations };
+  try {
+    const campaigns = await getCampaigns();
+    const evaluations = evaluate(campaigns, store.rules);
+    return { rules: store.rules, evaluations };
+  } catch (err) {
+    // Keep the rules UI usable even if campaign data can't be fetched
+    // (e.g. live mode misconfigured) — just show no pending actions.
+    return {
+      rules: store.rules,
+      evaluations: [],
+      error: err instanceof Error ? err.message : "Failed to load campaigns",
+    };
+  }
 }
 
 export async function GET() {
@@ -54,33 +68,43 @@ export async function POST(req: Request) {
   }
 
   if (body.op === "apply") {
-    // Execute every pending evaluation against the store.
+    // Execute every pending evaluation through the data layer so it works in
+    // both demo mode (in-memory store) and live mode (real Meta Graph API).
     const campaigns = await getCampaigns();
     const evaluations = evaluate(campaigns, store.rules);
     const applied: string[] = [];
     for (const e of evaluations) {
-      const c = store.campaigns.find((x) => x.id === e.campaignId);
+      const c = campaigns.find((x) => x.id === e.campaignId);
       if (!c) continue;
       const rule = store.rules.find((r) => r.id === e.ruleId);
-      switch (e.action) {
-        case "PAUSE":
-          await setCampaignStatus(c.id, "PAUSED");
-          break;
-        case "INCREASE_BUDGET":
-          c.dailyBudget = Math.round(
-            c.dailyBudget * (1 + (rule?.adjustPct ?? 0) / 100),
-          );
-          break;
-        case "DECREASE_BUDGET":
-          c.dailyBudget = Math.round(
-            c.dailyBudget * (1 - (rule?.adjustPct ?? 0) / 100),
-          );
-          break;
-        case "NOTIFY":
-          break;
+      const pct = rule?.adjustPct ?? 0;
+      try {
+        switch (e.action) {
+          case "PAUSE":
+            await setCampaignStatus(c.id, "PAUSED");
+            break;
+          case "INCREASE_BUDGET":
+            await updateCampaignDailyBudget(
+              c.id,
+              Math.round(c.dailyBudget * (1 + pct / 100)),
+            );
+            break;
+          case "DECREASE_BUDGET":
+            await updateCampaignDailyBudget(
+              c.id,
+              Math.round(c.dailyBudget * (1 - pct / 100)),
+            );
+            break;
+          case "NOTIFY":
+            break;
+        }
+        if (rule) rule.lastTriggered = new Date().toISOString();
+        applied.push(e.message);
+      } catch (err) {
+        applied.push(
+          `Failed: ${e.message} — ${err instanceof Error ? err.message : "error"}`,
+        );
       }
-      if (rule) rule.lastTriggered = new Date().toISOString();
-      applied.push(e.message);
     }
     return NextResponse.json({ applied, ...(await snapshot()) });
   }

@@ -38,9 +38,16 @@ Open http://localhost:3000.
 
 ### Environment variables
 
-| Variable            | Required | Purpose                                                                 |
-| ------------------- | -------- | ----------------------------------------------------------------------- |
-| `ANTHROPIC_API_KEY` | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
+| Variable               | Required | Purpose                                                                           |
+| ---------------------- | -------- | --------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`    | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
+| `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` to switch to **live** Meta API mode.        |
+| `META_AD_ACCOUNT_ID`   | No       | Ad account id, e.g. `act_1234567890`.                                              |
+| `META_API_VERSION`     | No       | Graph API version (default `v23.0`).                                               |
+| `META_INSIGHTS_DATE_PRESET` | No  | Reporting window (default `last_30d`).                                             |
+| `META_CONVERSION_ACTION_TYPE` | No | Override which insights action type counts as a conversion/revenue.             |
+
+See the "Demo mode vs. Live mode" section below for full details.
 
 ## How it's structured
 
@@ -55,25 +62,83 @@ app/
 components/             Sidebar, charts, tables, cards
 lib/
   types.ts              Domain model (Campaign → Ad Set → Ad, rules, AI)
-  meta/client.ts        Data-source abstraction  ← swap for the real Meta API here
+  meta/
+    client.ts           Data-source facade (routes live ⇆ demo)
+    config.ts           Reads Meta env, decides live vs demo
+    graph.ts            Real Meta Marketing API implementation
+    mock.ts             Demo implementation (backed by the mock store)
   mock/store.ts         Deterministic mock data + in-memory store
   automation/engine.ts  Rule evaluation
   ai/claude.ts          Claude call + heuristic fallback
   format.ts             Metric formatting & derivation
 ```
 
-## Going live against the real Meta Marketing API
+## Demo mode vs. Live mode (real Meta Marketing API)
 
-Everything reads/writes through `lib/meta/client.ts`. To connect the real API:
+The app picks a data source automatically:
 
-1. Create a Meta app, complete business verification, and get a long-lived
-   access token with `ads_read` / `ads_management` permissions.
-2. Reimplement the functions in `lib/meta/client.ts` to call the Graph API
-   (`GET /act_<id>/campaigns`, `/insights`, `POST /act_<id>/campaigns`, …)
-   using the env vars in `.env.example`.
+| Condition | Mode | Backed by |
+| --- | --- | --- |
+| `META_ACCESS_TOKEN` **and** `META_AD_ACCOUNT_ID` are set | **Live** | `lib/meta/graph.ts` (real Graph API) |
+| otherwise | **Demo** | `lib/mock/store.ts` (mock data) |
 
-The UI, automation engine, and AI layer don't change — they only depend on the
-functions exported from that one module.
+`lib/meta/client.ts` is the router; `lib/meta/config.ts` reads the env. Pages,
+the automation engine, and the AI layer only depend on `client.ts`, so neither
+mode leaks into the rest of the app. The sidebar/top bar show which mode is active.
+
+### Enabling live mode
+
+1. Create a Meta app with **Marketing API** access and complete **business
+   verification** (this is a Meta-side process that can take several days).
+2. Generate a **long-lived access token** with `ads_read` (and `ads_management`
+   if you want the automation "Run rules now" writes to apply on Meta).
+3. Find your ad account id (`act_XXXXXXXXXX`).
+4. Set the variables in `.env.local`:
+
+   ```bash
+   META_ACCESS_TOKEN=EAAB...                 # long-lived token
+   META_AD_ACCOUNT_ID=act_1234567890
+   META_API_VERSION=v23.0                    # optional
+   META_INSIGHTS_DATE_PRESET=last_30d        # optional
+   META_CONVERSION_ACTION_TYPE=              # optional (see below)
+   ```
+
+### What live mode does
+
+**Reads** (Graph API):
+
+| App function | Graph call |
+| --- | --- |
+| Campaign list + metrics | `GET /act_<id>/campaigns` + `GET /act_<id>/insights?level=campaign` + `GET /act_<id>/adsets` |
+| Account summary | `GET /act_<id>/insights` |
+| Daily chart series | `GET /act_<id>/insights?time_increment=1` |
+
+**Writes** (only when you click "Run rules now" on the Automation page, requires
+`ads_management`):
+
+| Action | Graph call |
+| --- | --- |
+| Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
+| Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
+| Create a campaign (wizard) | `POST /act_<id>/campaigns` (always **PAUSED**) |
+
+### Field mapping & caveats
+
+- **Conversions / revenue** come from the insights `actions` / `action_values`
+  arrays. By default the app looks for `purchase`, then `omni_purchase`, then
+  `offsite_conversion.fb_pixel_purchase`. If your numbers look off, set
+  `META_CONVERSION_ACTION_TYPE` to the exact action type your pixel/CAPI emits.
+- **Budgets** are read/written in minor units (cents) and shown in **USD** by the
+  formatter — adjust `lib/format.ts` for other account currencies.
+- **Budget writes** target the **campaign** `daily_budget`, which only applies
+  when the campaign uses Campaign Budget Optimization (CBO); otherwise budget
+  lives on the ad set.
+- **Campaign creation is deliberately conservative**: the wizard creates a
+  **PAUSED** campaign shell only (no spend). Ad sets, targeting, creatives, and
+  ads need a Page + creative assets — finish those in Ads Manager, or extend
+  `addCampaignLive()` in `lib/meta/graph.ts`.
+- Misconfiguration (bad token, blocked egress, unreachable account) surfaces a
+  clear error in the UI; the rest of the app keeps working.
 
 ## Scripts
 
