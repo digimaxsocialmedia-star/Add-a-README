@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { addCampaign, getCampaigns } from "@/lib/meta/client";
+import type { NewCampaignInput } from "@/lib/meta/client";
+import type { Objective } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+const OBJECTIVES: Objective[] = [
+  "OUTCOME_SALES",
+  "OUTCOME_TRAFFIC",
+  "OUTCOME_LEADS",
+  "OUTCOME_AWARENESS",
+  "OUTCOME_ENGAGEMENT",
+];
+
+export async function GET() {
+  const campaigns = await getCampaigns();
+  return NextResponse.json({ campaigns });
+}
+
+export async function POST(req: Request) {
+  let body: Partial<NewCampaignInput>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const name = (body.name ?? "").toString().trim();
+  const dailyBudget = Number(body.dailyBudget);
+  const objective = body.objective as Objective;
+
+  if (!name) {
+    return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
+  }
+  if (!OBJECTIVES.includes(objective)) {
+    return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
+  }
+  if (!Number.isFinite(dailyBudget) || dailyBudget <= 0) {
+    return NextResponse.json(
+      { error: "Daily budget must be a positive number" },
+      { status: 400 },
+    );
+  }
+
+  const campaign = await addCampaign({
+    name,
+    objective,
+    dailyBudget,
+    audience: (body.audience ?? "Broad").toString().trim() || "Broad",
+    headline: (body.headline ?? "").toString().trim() || "New offer",
+    primaryText:
+      (body.primaryText ?? "").toString().trim() || "Check out what's new.",
+    creativeType:
+      body.creativeType === "VIDEO" || body.creativeType === "CAROUSEL"
+        ? body.creativeType
+        : "IMAGE",
+  });
+
+  return NextResponse.json({ campaign }, { status: 201 });
+}
