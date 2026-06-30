@@ -13,6 +13,7 @@ import { getMetaConfig } from "./config";
 import { derive } from "../format";
 import type {
   AccountSummary,
+  AdRow,
   CampaignWithMetrics,
   DerivedMetrics,
   Metrics,
@@ -306,7 +307,77 @@ export async function getDailySeriesLive(): Promise<SeriesPoint[]> {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+export async function getAdsLive(): Promise<AdRow[]> {
+  const { adAccountId, datePreset } = getMetaConfig();
+  const [rawAds, insightRows, rawCampaigns] = await Promise.all([
+    graphGetAll<{
+      id: string;
+      name?: string;
+      status?: string;
+      adset_id?: string;
+      campaign_id?: string;
+    }>(`${adAccountId}/ads`, { fields: "id,name,status,adset_id,campaign_id" }),
+    graphGetAll<InsightRow & { ad_id: string }>(`${adAccountId}/insights`, {
+      level: "ad",
+      fields: `ad_id,${INSIGHT_FIELDS}`,
+      date_preset: datePreset,
+    }),
+    graphGetAll<RawCampaign>(`${adAccountId}/campaigns`, {
+      fields: "id,name,objective",
+    }),
+  ]);
+
+  const insightsByAd = new Map<string, Metrics>();
+  for (const row of insightRows) insightsByAd.set(row.ad_id, rowToMetrics(row));
+
+  const campInfo = new Map<string, { name: string; objective: Objective }>();
+  for (const c of rawCampaigns) {
+    campInfo.set(c.id, {
+      name: c.name ?? c.id,
+      objective: normalizeObjective(c.objective),
+    });
+  }
+
+  return rawAds.map((a) => {
+    const info = a.campaign_id ? campInfo.get(a.campaign_id) : undefined;
+    return {
+      id: a.id,
+      name: a.name ?? a.id,
+      status: a.status === "ACTIVE" ? "ACTIVE" : "PAUSED",
+      creativeType: "IMAGE", // creative format requires extra creative lookups
+      headline: "",
+      primaryText: "",
+      campaignId: a.campaign_id ?? "",
+      campaignName: info?.name ?? "",
+      adSetId: a.adset_id ?? "",
+      objective: info?.objective ?? "OUTCOME_TRAFFIC",
+      metrics: derive(insightsByAd.get(a.id) ?? empty()),
+    };
+  });
+}
+
 export async function setCampaignStatusLive(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  await graphPost(id, { status });
+}
+
+export async function setAdSetStatusLive(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  await graphPost(id, { status });
+}
+
+export async function updateAdSetDailyBudgetLive(
+  id: string,
+  dailyBudget: number,
+): Promise<void> {
+  await graphPost(id, { daily_budget: String(Math.round(dailyBudget * 100)) });
+}
+
+export async function setAdStatusLive(
   id: string,
   status: "ACTIVE" | "PAUSED",
 ): Promise<void> {

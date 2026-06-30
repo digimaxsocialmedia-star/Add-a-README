@@ -13,9 +13,13 @@
 // -----------------------------------------------------------------------------
 
 import { getAccountLabel, getMode, isLiveMode } from "./config";
+import { derive, sumMetrics } from "../format";
 import type {
   AccountSummary,
+  AdRow,
   CampaignWithMetrics,
+  ManagerCampaign,
+  Metrics,
   NewCampaignInput,
   SeriesPoint,
 } from "../types";
@@ -67,4 +71,75 @@ export function updateCampaignDailyBudget(
   return isLiveMode()
     ? live.updateCampaignDailyBudgetLive(id, dailyBudget)
     : mock.updateCampaignDailyBudgetMock(id, dailyBudget);
+}
+
+export function getAds(): Promise<AdRow[]> {
+  return isLiveMode() ? live.getAdsLive() : mock.getAdsMock();
+}
+
+export function setAdSetStatus(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  return isLiveMode()
+    ? live.setAdSetStatusLive(id, status)
+    : mock.setAdSetStatusMock(id, status);
+}
+
+export function updateAdSetDailyBudget(
+  id: string,
+  dailyBudget: number,
+): Promise<void> {
+  return isLiveMode()
+    ? live.updateAdSetDailyBudgetLive(id, dailyBudget)
+    : mock.updateAdSetDailyBudgetMock(id, dailyBudget);
+}
+
+export function setAdStatus(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  return isLiveMode()
+    ? live.setAdStatusLive(id, status)
+    : mock.setAdStatusMock(id, status);
+}
+
+/** Builds the 3-level Campaign → Ad set → Ad tree used by the Ads Manager,
+ *  composing campaigns + ads so it works in both demo and live mode. */
+export async function getManagerTree(): Promise<ManagerCampaign[]> {
+  const [campaigns, ads] = await Promise.all([getCampaigns(), getAds()]);
+  const adsByAdSet = new Map<string, AdRow[]>();
+  for (const ad of ads) {
+    const list = adsByAdSet.get(ad.adSetId) ?? [];
+    list.push(ad);
+    adsByAdSet.set(ad.adSetId, list);
+  }
+  const rawOf = (m: Metrics): Metrics => ({
+    spend: m.spend,
+    impressions: m.impressions,
+    clicks: m.clicks,
+    conversions: m.conversions,
+    revenue: m.revenue,
+  });
+  return campaigns.map((c) => ({
+    id: c.id,
+    name: c.name,
+    objective: c.objective,
+    status: c.status,
+    dailyBudget: c.dailyBudget,
+    metrics: c.metrics,
+    adSets: c.adSets.map((as) => {
+      const adRows = adsByAdSet.get(as.id) ?? [];
+      const metrics = derive(sumMetrics(adRows.map((a) => rawOf(a.metrics))));
+      return {
+        id: as.id,
+        name: as.name,
+        status: as.status,
+        dailyBudget: as.dailyBudget,
+        audience: as.audience,
+        metrics,
+        ads: adRows,
+      };
+    }),
+  }));
 }

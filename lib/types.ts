@@ -168,3 +168,86 @@ export interface AiResult {
   model?: string;
   note?: string;
 }
+
+// ---- Creative studio ----
+
+/** A flat ad row with its parent context and derived metrics. */
+export interface AdRow {
+  id: string;
+  name: string;
+  status: EntityStatus;
+  creativeType: CreativeType;
+  headline: string;
+  primaryText: string;
+  campaignId: string;
+  campaignName: string;
+  adSetId: string;
+  objective: Objective;
+  metrics: DerivedMetrics;
+}
+
+export interface AdCopyVariant {
+  angle: string;
+  headline: string;
+  primaryText: string;
+}
+
+export interface AdCopyResult {
+  variants: AdCopyVariant[];
+  source: "claude" | "heuristic";
+  model?: string;
+  note?: string;
+}
+
+// ---- Ads Manager (3-level tree) ----
+
+export interface ManagerAd extends AdRow {}
+
+export interface ManagerAdSet {
+  id: string;
+  name: string;
+  status: EntityStatus;
+  dailyBudget: number;
+  audience: string;
+  metrics: DerivedMetrics;
+  ads: ManagerAd[];
+}
+
+export interface ManagerCampaign {
+  id: string;
+  name: string;
+  objective: Objective;
+  status: EntityStatus;
+  dailyBudget: number;
+  metrics: DerivedMetrics;
+  adSets: ManagerAdSet[];
+}
+
+// ---- Account Audit ----
+
+export type CheckStatus = "pass" | "warn" | "fail";
+
+export interface AuditCheck {
+  id: string;
+  title: string;
+  status: CheckStatus;
+  category: "profitability" | "efficiency" | "structure" | "scaling";
+  detail: string;
+  recommendation?: string;
+}
+
+export interface AuditResult {
+  score: number; // 0-100
+  grade: "A" | "B" | "C" | "D" | "F";
+  checks: AuditCheck[];
+  counts: { pass: number; warn: number; fail: number };
+}
+
+// ---- Alerts ----
+
+export interface Alert {
+  id: string;
+  severity: Severity;
+  title: string;
+  detail: string;
+}

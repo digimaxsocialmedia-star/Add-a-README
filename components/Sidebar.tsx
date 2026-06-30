@@ -9,12 +9,20 @@ import {
   Zap,
   Sparkles,
   Plane,
+  FileBarChart,
+  ShieldCheck,
+  SlidersHorizontal,
+  Images,
 } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/reports", label: "Reports & Alerts", icon: FileBarChart },
+  { href: "/audit", label: "Account Audit", icon: ShieldCheck },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/manager", label: "Ads Manager", icon: SlidersHorizontal },
   { href: "/create", label: "Create ads", icon: PlusCircle },
+  { href: "/creatives", label: "Creative Studio", icon: Images },
   { href: "/automation", label: "Automation", icon: Zap },
   { href: "/ai-insights", label: "AI Insights", icon: Sparkles },
 ];

@@ -12,13 +12,26 @@ realistic **mock data** out of the box — no Meta account required — and uses
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
   conversions, with a 30-day spend/revenue/ROAS chart and a top-campaigns table.
+- **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d), per-campaign
+  breakdown, CSV export, and automatic anomaly alerts (spend spikes, ROAS/CTR
+  drops, zero-conversion spend, account below breakeven).
+- **🛡️ Account Audit** — a health score (0–100 + letter grade) from automated
+  checks across profitability, efficiency, structure and scaling, each with a
+  concrete fix.
 - **➕ Create ads** — a campaign → ad set → ad wizard (objective, audience,
   budget, creative) that launches a new campaign.
+- **🎛️ Ads Manager** — a 3-level Campaign → Ad set → Ad tree with inline
+  on/off toggles, inline budget editing, and bulk pause/activate.
+- **🖼️ Creative Studio** — performance by creative format, best/worst ad
+  rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
-  prioritized, actionable recommendations. Falls back to a built-in heuristic
-  optimizer when no API key is set, so the feature always works.
+  prioritized, actionable recommendations.
+
+> The two AI features (AI Insights, Creative Studio copywriting) call Claude when
+> `ANTHROPIC_API_KEY` is set and fall back to a built-in heuristic engine
+> otherwise, so every feature works out of the box.
 
 ## Tech stack
 
@@ -54,14 +67,20 @@ See the "Demo mode vs. Live mode" section below for full details.
 ```
 app/
   page.tsx              Dashboard
+  reports/              Reports & alerts
+  audit/                Account audit
   campaigns/            Campaign list
+  manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
+  creatives/            Creative Studio + AI copywriting
   automation/           Automation rules
   ai-insights/          AI recommendations
-  api/                  Route handlers (campaigns, automation, ai/suggestions)
-components/             Sidebar, charts, tables, cards
+  error.tsx             Friendly error boundary
+  api/                  Route handlers (campaigns, manager, automation,
+                        report, ai/suggestions, ai/ad-copy)
+components/             Sidebar, charts, tables, cards, ad-copy generator
 lib/
-  types.ts              Domain model (Campaign → Ad Set → Ad, rules, AI)
+  types.ts              Domain model (Campaign → Ad Set → Ad, rules, AI, audit)
   meta/
     client.ts           Data-source facade (routes live ⇆ demo)
     config.ts           Reads Meta env, decides live vs demo
@@ -69,7 +88,9 @@ lib/
     mock.ts             Demo implementation (backed by the mock store)
   mock/store.ts         Deterministic mock data + in-memory store
   automation/engine.ts  Rule evaluation
-  ai/claude.ts          Claude call + heuristic fallback
+  audit/engine.ts       Account health scoring
+  alerts/engine.ts      Anomaly detection
+  ai/claude.ts          Claude calls (insights + ad copy) + heuristic fallbacks
   format.ts             Metric formatting & derivation
 ```
 

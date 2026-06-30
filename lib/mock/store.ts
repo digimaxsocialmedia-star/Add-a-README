@@ -42,6 +42,7 @@ interface Profile {
   trendPerDay: number; // gentle drift in spend volume
   seed: number;
   audiences: [string, string];
+  spikeLastDay?: boolean; // inject a recent spend anomaly (for the Alerts demo)
 }
 
 const PROFILES: Profile[] = [
@@ -70,6 +71,7 @@ const PROFILES: Profile[] = [
     trendPerDay: 0.002,
     seed: 202,
     audiences: ["LLA 1% purchasers", "LLA 2% purchasers"],
+    spikeLastDay: true,
   },
   {
     name: "Brand Awareness — Video",
@@ -147,13 +149,17 @@ function genDaily(p: Profile): DailyPoint[] {
     const cvr = (p.cvr * (0.78 + rng() * 0.44)) / 100;
     const conversions = Math.round(clicks * cvr);
     const revenue = conversions * p.aov * (0.9 + rng() * 0.2);
+
+    // Most-recent day (i === 0): optionally inject a spend spike that doesn't
+    // convert, so the Alerts engine has a realistic anomaly to surface.
+    const spike = i === 0 && p.spikeLastDay;
     points.push({
       date: isoDaysAgo(i),
-      spend: round2(spend),
-      impressions,
-      clicks,
-      conversions,
-      revenue: round2(revenue),
+      spend: round2(spike ? spend * 3.2 : spend),
+      impressions: spike ? Math.round(impressions * 3.2) : impressions,
+      clicks: spike ? Math.round(clicks * 3.2) : clicks,
+      conversions: spike ? Math.round(conversions * 0.4) : conversions,
+      revenue: round2(spike ? revenue * 0.4 : revenue),
     });
   }
   return points;

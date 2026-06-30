@@ -5,6 +5,7 @@ import { getStore } from "../mock/store";
 import { derive, sumMetrics } from "../format";
 import type {
   AccountSummary,
+  AdRow,
   Campaign,
   CampaignWithMetrics,
   NewCampaignInput,
@@ -130,4 +131,69 @@ export async function updateCampaignDailyBudgetMock(
 ): Promise<void> {
   const c = getStore().campaigns.find((x) => x.id === id);
   if (c) c.dailyBudget = Math.round(dailyBudget);
+}
+
+export async function getAdsMock(): Promise<AdRow[]> {
+  const rows: AdRow[] = [];
+  for (const c of getStore().campaigns) {
+    for (const as of c.adSets) {
+      for (const ad of as.ads) {
+        rows.push({
+          id: ad.id,
+          name: ad.name,
+          status: ad.status,
+          creativeType: ad.creativeType,
+          headline: ad.headline,
+          primaryText: ad.primaryText,
+          campaignId: c.id,
+          campaignName: c.name,
+          adSetId: as.id,
+          objective: c.objective,
+          metrics: derive(ad.metrics),
+        });
+      }
+    }
+  }
+  return rows;
+}
+
+export async function setAdSetStatusMock(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  for (const c of getStore().campaigns) {
+    const as = c.adSets.find((x) => x.id === id);
+    if (as) {
+      as.status = status;
+      return;
+    }
+  }
+}
+
+export async function updateAdSetDailyBudgetMock(
+  id: string,
+  dailyBudget: number,
+): Promise<void> {
+  for (const c of getStore().campaigns) {
+    const as = c.adSets.find((x) => x.id === id);
+    if (as) {
+      as.dailyBudget = Math.round(dailyBudget);
+      return;
+    }
+  }
+}
+
+export async function setAdStatusMock(
+  id: string,
+  status: "ACTIVE" | "PAUSED",
+): Promise<void> {
+  for (const c of getStore().campaigns) {
+    for (const as of c.adSets) {
+      const ad = as.ads.find((x) => x.id === id);
+      if (ad) {
+        ad.status = status;
+        return;
+      }
+    }
+  }
 }

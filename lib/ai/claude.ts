@@ -1,7 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { OBJECTIVE_LABELS } from "../types";
 import { money, pct, roasFmt } from "../format";
-import type { AiResult, AiSuggestion, CampaignWithMetrics } from "../types";
+import type {
+  AdCopyResult,
+  AdCopyVariant,
+  AiResult,
+  AiSuggestion,
+  CampaignWithMetrics,
+} from "../types";
 
 // Per the project's Claude integration: use the latest Opus model.
 const MODEL = "claude-opus-4-8";
@@ -226,4 +232,126 @@ export function heuristicSuggestions(
 
 function severityRank(s: AiSuggestion["severity"]): number {
   return s === "high" ? 3 : s === "medium" ? 2 : 1;
+}
+
+// -----------------------------------------------------------------------------
+// AI ad copy generator (Creative Studio)
+// -----------------------------------------------------------------------------
+
+export interface AdCopyInput {
+  product: string;
+  audience: string;
+  tone: string;
+  objective: string;
+}
+
+const AD_COPY_SCHEMA = {
+  type: "object",
+  properties: {
+    variants: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          angle: { type: "string" },
+          headline: { type: "string" },
+          primaryText: { type: "string" },
+        },
+        required: ["angle", "headline", "primaryText"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["variants"],
+  additionalProperties: false,
+} as const;
+
+export async function generateAdCopy(input: AdCopyInput): Promise<AdCopyResult> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      ...heuristicAdCopy(input),
+      source: "heuristic",
+      note: "Set ANTHROPIC_API_KEY to write copy with Claude. Showing templated variants.",
+    };
+  }
+  try {
+    const client = new Anthropic();
+    const system = `You are a direct-response copywriter for Meta (Facebook/Instagram) ads.
+Write scroll-stopping ad copy that drives the stated objective. For each variant use a
+distinct angle (e.g. problem/solution, social proof, urgency/scarcity, benefit-led,
+curiosity). Headlines must be under ~40 characters; primary text 1-3 short sentences with
+a clear call to action. No fabricated statistics or unverifiable claims.`;
+    const user = `Product/offer: ${input.product}
+Target audience: ${input.audience}
+Tone: ${input.tone}
+Campaign objective: ${input.objective}
+
+Write 4 ad copy variants.`;
+
+    const params = {
+      model: MODEL,
+      max_tokens: 2048,
+      thinking: { type: "adaptive" },
+      system,
+      output_config: { format: { type: "json_schema", schema: AD_COPY_SCHEMA } },
+      messages: [{ role: "user", content: user }],
+    };
+    const response = (await client.messages.create(params as never)) as {
+      content: Array<{ type: string; text?: string }>;
+    };
+    const textBlock = response.content.find(
+      (b) => b.type === "text" && typeof b.text === "string",
+    );
+    if (!textBlock?.text) throw new Error("No text block in response");
+    const parsed = JSON.parse(textBlock.text) as { variants: AdCopyVariant[] };
+    if (!Array.isArray(parsed.variants) || parsed.variants.length === 0) {
+      throw new Error("Empty variants");
+    }
+    return { variants: parsed.variants, source: "claude", model: MODEL };
+  } catch (err) {
+    return {
+      ...heuristicAdCopy(input),
+      source: "heuristic",
+      note: `Claude call failed (${
+        err instanceof Error ? err.message : "unknown error"
+      }). Showing templated variants.`,
+    };
+  }
+}
+
+function heuristicAdCopy(input: AdCopyInput): { variants: AdCopyVariant[] } {
+  const p = input.product.trim() || "our product";
+  const a = input.audience.trim() || "you";
+  const variants: AdCopyVariant[] = [
+    {
+      angle: "Benefit-led",
+      headline: `Meet ${truncate(p, 28)}`,
+      primaryText: `Made for ${a}. ${capitalize(p)} that just works — see why people are switching. Shop now →`,
+    },
+    {
+      angle: "Problem / solution",
+      headline: "Tired of the hassle?",
+      primaryText: `${capitalize(a)} deserve better. ${capitalize(
+        p,
+      )} fixes it in minutes, not hours. Try it today.`,
+    },
+    {
+      angle: "Social proof",
+      headline: "Loved by thousands",
+      primaryText: `Join the ${a} who made the switch to ${p}. Real results, zero regret. Get yours →`,
+    },
+    {
+      angle: "Urgency / scarcity",
+      headline: "Limited-time offer",
+      primaryText: `Don't miss out — ${p} at our best price yet. Offer ends soon. Claim it now.`,
+    },
+  ];
+  return { variants };
+}
+
+function truncate(s: string, n: number) {
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
+}
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
