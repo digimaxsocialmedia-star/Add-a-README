@@ -32,7 +32,7 @@ function StatusToggle({
     <button
       onClick={onToggle}
       disabled={busy}
-      title={active ? "Pause" : "Activate"}
+      title={active ? "Tạm dừng" : "Bật chạy"}
       className={`relative h-5 w-9 rounded-full transition disabled:opacity-50 ${
         active ? "bg-emerald-500" : "bg-slate-300"
       }`}
@@ -168,8 +168,8 @@ export default function ManagerPage() {
   return (
     <>
       <TopBar
-        title="Ads Manager"
-        subtitle="Edit campaigns, ad sets and ads — toggle status and budgets inline"
+        title="Quản lý quảng cáo"
+        subtitle="Sửa chiến dịch, nhóm quảng cáo và quảng cáo — bật/tắt và đổi ngân sách ngay tại chỗ"
       />
       <div className="space-y-4 p-6">
         {error ? (
@@ -182,14 +182,14 @@ export default function ManagerPage() {
         {selected.size > 0 ? (
           <div className="card flex items-center justify-between p-3">
             <span className="text-sm text-slate-600">
-              {selected.size} campaign{selected.size === 1 ? "" : "s"} selected
+              Đã chọn {selected.size} chiến dịch
             </span>
             <div className="flex gap-2">
               <button className="btn-ghost" onClick={() => bulk("activate")} disabled={busy}>
-                <Play className="h-4 w-4" /> Activate
+                <Play className="h-4 w-4" /> Bật chạy
               </button>
               <button className="btn-ghost" onClick={() => bulk("pause")} disabled={busy}>
-                <Pause className="h-4 w-4" /> Pause
+                <Pause className="h-4 w-4" /> Tạm dừng
               </button>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function ManagerPage() {
 
         {loading ? (
           <div className="flex items-center gap-2 text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <Loader2 className="h-4 w-4 animate-spin" /> Đang tải…
           </div>
         ) : (
           <div className="card overflow-hidden">
@@ -205,10 +205,10 @@ export default function ManagerPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-3 py-3 font-medium">Name</th>
-                    <th className="px-3 py-3 text-center font-medium">On/Off</th>
-                    <th className="px-3 py-3 text-right font-medium">Budget/day</th>
-                    <th className="px-3 py-3 text-right font-medium">Spend</th>
+                    <th className="px-3 py-3 font-medium">Tên</th>
+                    <th className="px-3 py-3 text-center font-medium">Bật/Tắt</th>
+                    <th className="px-3 py-3 text-right font-medium">NS/ngày</th>
+                    <th className="px-3 py-3 text-right font-medium">Chi tiêu</th>
                     <th className="px-3 py-3 text-right font-medium">ROAS</th>
                     <th className="px-3 py-3 text-right font-medium">CTR</th>
                   </tr>
@@ -237,7 +237,7 @@ export default function ManagerPage() {
                               </button>
                               <span className="font-medium text-slate-900">{c.name}</span>
                               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                {c.adSets.length} ad sets
+                                {c.adSets.length} nhóm QC
                               </span>
                             </div>
                           </td>
@@ -285,7 +285,7 @@ export default function ManagerPage() {
                                         </button>
                                         <span className="text-slate-800">{as.name}</span>
                                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                          {as.ads.length} ads
+                                          {as.ads.length} quảng cáo
                                         </span>
                                       </div>
                                     </td>

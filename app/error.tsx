@@ -16,15 +16,15 @@ export default function Error({
           <AlertTriangle className="h-6 w-6" />
         </div>
         <h2 className="text-lg font-semibold text-slate-900">
-          Couldn&rsquo;t load ad data
+          Không tải được dữ liệu quảng cáo
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          This usually means live mode is enabled but the Meta Marketing API
-          credentials are missing, invalid, or the account is unreachable.
-          Check <code className="rounded bg-slate-100 px-1">META_ACCESS_TOKEN</code>{" "}
-          and{" "}
+          Thường là do chế độ trực tiếp đang bật nhưng thông tin Meta Marketing
+          API bị thiếu, sai, hoặc không kết nối được tài khoản. Hãy kiểm tra{" "}
+          <code className="rounded bg-slate-100 px-1">META_ACCESS_TOKEN</code>{" "}
+          và{" "}
           <code className="rounded bg-slate-100 px-1">META_AD_ACCOUNT_ID</code>,
-          or unset them to use demo mode.
+          hoặc bỏ chúng đi để dùng chế độ demo.
         </p>
         {error?.message ? (
           <p className="mt-3 break-words rounded-lg bg-slate-50 px-3 py-2 text-left text-xs text-slate-500">
@@ -32,7 +32,7 @@ export default function Error({
           </p>
         ) : null}
         <button className="btn-primary mx-auto mt-6" onClick={reset}>
-          Try again
+          Thử lại
         </button>
       </div>
     </div>

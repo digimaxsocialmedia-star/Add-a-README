@@ -13,18 +13,20 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Images,
+  Users,
 } from "lucide-react";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/reports", label: "Reports & Alerts", icon: FileBarChart },
-  { href: "/audit", label: "Account Audit", icon: ShieldCheck },
-  { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/manager", label: "Ads Manager", icon: SlidersHorizontal },
-  { href: "/create", label: "Create ads", icon: PlusCircle },
-  { href: "/creatives", label: "Creative Studio", icon: Images },
-  { href: "/automation", label: "Automation", icon: Zap },
-  { href: "/ai-insights", label: "AI Insights", icon: Sparkles },
+  { href: "/", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/reports", label: "Báo cáo & Cảnh báo", icon: FileBarChart },
+  { href: "/audit", label: "Đánh giá tài khoản", icon: ShieldCheck },
+  { href: "/campaigns", label: "Chiến dịch", icon: Megaphone },
+  { href: "/manager", label: "Quản lý quảng cáo", icon: SlidersHorizontal },
+  { href: "/create", label: "Tạo quảng cáo", icon: PlusCircle },
+  { href: "/creatives", label: "Xưởng nội dung", icon: Images },
+  { href: "/audiences", label: "Studio đối tượng", icon: Users },
+  { href: "/automation", label: "Tự động hóa", icon: Zap },
+  { href: "/ai-insights", label: "Gợi ý AI", icon: Sparkles },
 ];
 
 export function Sidebar({ mode = "demo" }: { mode?: "live" | "demo" }) {
@@ -37,7 +39,7 @@ export function Sidebar({ mode = "demo" }: { mode?: "live" | "demo" }) {
         </div>
         <div>
           <div className="text-base font-semibold text-white">AdPilot</div>
-          <div className="text-xs text-slate-400">Meta Ads autopilot</div>
+          <div className="text-xs text-slate-400">Tự động hóa Meta Ads</div>
         </div>
       </div>
 
@@ -68,7 +70,7 @@ export function Sidebar({ mode = "demo" }: { mode?: "live" | "demo" }) {
             mode === "live" ? "bg-emerald-400" : "bg-amber-400"
           }`}
         />
-        {mode === "live" ? "Live · Meta Marketing API" : "Demo · mock data"}
+        {mode === "live" ? "Trực tiếp · Meta Marketing API" : "Demo · dữ liệu mẫu"}
       </div>
     </aside>
   );

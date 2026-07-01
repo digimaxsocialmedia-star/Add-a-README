@@ -15,7 +15,7 @@ export function StatusBadge({ status }: { status: EntityStatus }) {
           active ? "bg-emerald-500" : "bg-slate-400"
         }`}
       />
-      {active ? "Active" : "Paused"}
+      {active ? "Đang chạy" : "Tạm dừng"}
     </span>
   );
 }

@@ -61,7 +61,7 @@ export default function ReportsPage() {
 
   function exportCsv() {
     if (!view) return;
-    const header = ["Campaign", "Status", "Spend", "Revenue", "ROAS", "CTR(%)", "Conversions"];
+    const header = ["Chiến dịch", "Trạng thái", "Chi tiêu", "Doanh thu", "ROAS", "CTR(%)", "Chuyển đổi"];
     const lines = view.rows.map((r) =>
       [
         `"${r.name.replace(/"/g, '""')}"`,
@@ -86,18 +86,18 @@ export default function ReportsPage() {
   return (
     <>
       <TopBar
-        title="Reports & Alerts"
-        subtitle="Custom reporting windows, exports, and anomaly alerts"
+        title="Báo cáo & Cảnh báo"
+        subtitle="Tùy chọn khoảng thời gian, xuất file và cảnh báo bất thường"
         action={
           <button className="btn-ghost" onClick={exportCsv} disabled={!view}>
-            <Download className="h-4 w-4" /> Export CSV
+            <Download className="h-4 w-4" /> Xuất CSV
           </button>
         }
       />
       <div className="space-y-6 p-6">
         {loading || !view || !data ? (
           <div className="flex items-center gap-2 text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading report…
+            <Loader2 className="h-4 w-4 animate-spin" /> Đang tải báo cáo…
           </div>
         ) : (
           <>
@@ -106,7 +106,7 @@ export default function ReportsPage() {
               <div className="mb-3 flex items-center gap-2">
                 <Bell className="h-4 w-4 text-amber-500" />
                 <h2 className="text-base font-semibold text-slate-900">
-                  Alerts ({data.alerts.length})
+                  Cảnh báo ({data.alerts.length})
                 </h2>
               </div>
               {data.alerts.length ? (
@@ -130,14 +130,14 @@ export default function ReportsPage() {
                 </div>
               ) : (
                 <div className="card p-6 text-center text-sm text-slate-400">
-                  No anomalies detected — everything looks stable.
+                  Không phát hiện bất thường — mọi thứ đang ổn định.
                 </div>
               )}
             </div>
 
             {/* Window selector */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500">Window:</span>
+              <span className="text-sm text-slate-500">Khoảng:</span>
               {WINDOWS.map((w) => (
                 <button
                   key={w}
@@ -148,24 +148,24 @@ export default function ReportsPage() {
                       : "border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  Last {w}d
+                  {w} ngày
                 </button>
               ))}
             </div>
 
             {/* KPI row */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-              <Kpi label="Spend" value={money(view.totals.spend)} />
-              <Kpi label="Revenue" value={money(view.totals.revenue)} />
+              <Kpi label="Chi tiêu" value={money(view.totals.spend)} />
+              <Kpi label="Doanh thu" value={money(view.totals.revenue)} />
               <Kpi label="ROAS" value={roasFmt(view.totals.roas)} />
-              <Kpi label="Conversions" value={intNum(view.totals.conversions)} />
+              <Kpi label="Chuyển đổi" value={intNum(view.totals.conversions)} />
               <Kpi label="CTR" value={pct(view.totals.ctr)} />
             </div>
 
             {/* Chart */}
             <div className="card p-5">
               <h2 className="mb-4 text-base font-semibold text-slate-900">
-                Trend ({days} days)
+                Xu hướng ({days} ngày)
               </h2>
               <PerformanceChart data={view.series} />
             </div>
@@ -173,19 +173,19 @@ export default function ReportsPage() {
             {/* Per-campaign breakdown */}
             <div>
               <h2 className="mb-3 text-base font-semibold text-slate-900">
-                Campaign breakdown
+                Chi tiết theo chiến dịch
               </h2>
               <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <th className="px-4 py-3 font-medium">Campaign</th>
-                        <th className="px-4 py-3 text-right font-medium">Spend</th>
-                        <th className="px-4 py-3 text-right font-medium">Revenue</th>
+                        <th className="px-4 py-3 font-medium">Chiến dịch</th>
+                        <th className="px-4 py-3 text-right font-medium">Chi tiêu</th>
+                        <th className="px-4 py-3 text-right font-medium">Doanh thu</th>
                         <th className="px-4 py-3 text-right font-medium">ROAS</th>
                         <th className="px-4 py-3 text-right font-medium">CTR</th>
-                        <th className="px-4 py-3 text-right font-medium">Conv.</th>
+                        <th className="px-4 py-3 text-right font-medium">Chuyển đổi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -217,9 +217,9 @@ export default function ReportsPage() {
               </div>
               {data.mode === "live" ? (
                 <p className="mt-2 text-xs text-slate-400">
-                  In live mode the per-campaign breakdown reflects the configured
-                  reporting window; the window buttons re-window the account-level
-                  trend above.
+                  Ở chế độ trực tiếp, chi tiết theo chiến dịch phản ánh khoảng
+                  thời gian báo cáo đã cấu hình; các nút khoảng thời gian sẽ áp
+                  dụng lại cho biểu đồ xu hướng tổng ở trên.
                 </p>
               ) : null}
             </div>

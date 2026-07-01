@@ -1,32 +1,50 @@
 import type { Metrics, DerivedMetrics } from "./types";
 
-const usd = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+// Toàn bộ ứng dụng hiển thị bằng tiếng Việt và đơn vị tiền VND (đồng).
+const LOCALE = "vi-VN";
+const CURRENCY = "VND";
 
-const usd0 = new Intl.NumberFormat("en-US", {
+const vnd = new Intl.NumberFormat(LOCALE, {
   style: "currency",
-  currency: "USD",
+  currency: CURRENCY,
   maximumFractionDigits: 0,
 });
 
-const compact = new Intl.NumberFormat("en-US", {
+const vndCompact = new Intl.NumberFormat(LOCALE, {
+  style: "currency",
+  currency: CURRENCY,
   notation: "compact",
   maximumFractionDigits: 1,
 });
 
-const int = new Intl.NumberFormat("en-US");
+const compact = new Intl.NumberFormat(LOCALE, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 
-export const money = (n: number) => usd.format(n || 0);
-export const money0 = (n: number) => usd0.format(n || 0);
+const int = new Intl.NumberFormat(LOCALE);
+
+const dec2 = new Intl.NumberFormat(LOCALE, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export const money = (n: number) => vnd.format(Math.round(n || 0));
+export const money0 = (n: number) => vnd.format(Math.round(n || 0));
+export const moneyCompact = (n: number) => vndCompact.format(n || 0);
 export const compactNum = (n: number) => compact.format(n || 0);
 export const intNum = (n: number) => int.format(Math.round(n || 0));
-export const pct = (n: number) => `${(n || 0).toFixed(2)}%`;
-export const roasFmt = (n: number) => `${(n || 0).toFixed(2)}x`;
+export const pct = (n: number) => `${dec2.format(n || 0)}%`;
+export const roasFmt = (n: number) => `${dec2.format(n || 0)}x`;
 
-/** Sum a list of raw metric objects. */
+/** Định dạng ngày kiểu Việt Nam, ví dụ "5 Th6". */
+export const fmtDate = (d: string) =>
+  new Date(d + "T00:00:00").toLocaleDateString(LOCALE, {
+    day: "numeric",
+    month: "short",
+  });
+
+/** Cộng dồn danh sách chỉ số thô. */
 export function sumMetrics(items: Metrics[]): Metrics {
   return items.reduce<Metrics>(
     (acc, m) => ({
@@ -40,7 +58,7 @@ export function sumMetrics(items: Metrics[]): Metrics {
   );
 }
 
-/** Compute rate-based metrics from raw totals. */
+/** Tính các chỉ số tỉ lệ từ số liệu tổng. */
 export function derive(m: Metrics): DerivedMetrics {
   const ctr = m.impressions ? (m.clicks / m.impressions) * 100 : 0;
   const cpc = m.clicks ? m.spend / m.clicks : 0;

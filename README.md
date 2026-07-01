@@ -8,6 +8,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 > Demo / educational project. The data layer is deliberately abstracted so the
 > mock backend can be swapped for the real Meta Marketing API later.
 
+> 🇻🇳 **Giao diện tiếng Việt, tiền tệ VND (đồng).** Ứng dụng đã được Việt hóa
+> toàn bộ và dùng đồng Việt Nam. AI (gợi ý tối ưu + viết nội dung quảng cáo) trả
+> lời bằng tiếng Việt. Tài khoản Meta dùng VND: đặt `META_CURRENCY_OFFSET=1`
+> (xem phần "Demo mode vs. Live mode" bên dưới).
+
 ## Features
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
@@ -24,6 +29,9 @@ realistic **mock data** out of the box — no Meta account required — and uses
   on/off toggles, inline budget editing, and bulk pause/activate.
 - **🖼️ Creative Studio** — performance by creative format, best/worst ad
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
+- **👥 Audience Studio** — performance by audience (grouped from ad sets),
+  audience-type classification, overlap warnings, and AI-suggested new
+  audiences to test (lookalikes, interests, retargeting…).
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
@@ -73,6 +81,7 @@ app/
   manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
+  audiences/            Audience Studio + AI audience ideas
   automation/           Automation rules
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
@@ -90,6 +99,7 @@ lib/
   automation/engine.ts  Rule evaluation
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
+  audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy) + heuristic fallbacks
   format.ts             Metric formatting & derivation
 ```
@@ -149,8 +159,10 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
   arrays. By default the app looks for `purchase`, then `omni_purchase`, then
   `offsite_conversion.fb_pixel_purchase`. If your numbers look off, set
   `META_CONVERSION_ACTION_TYPE` to the exact action type your pixel/CAPI emits.
-- **Budgets** are read/written in minor units (cents) and shown in **USD** by the
-  formatter — adjust `lib/format.ts` for other account currencies.
+- **Giao diện tiếng Việt, tiền tệ VND (đồng).** Toàn bộ UI đã Việt hóa và hiển
+  thị bằng VND. Nếu tài khoản Meta của bạn dùng VND, đặt
+  `META_CURRENCY_OFFSET=1` (VND không có đơn vị lẻ) để ngân sách hiển thị đúng.
+  Đổi ngôn ngữ/tiền tệ tại `lib/format.ts` (`LOCALE`, `CURRENCY`).
 - **Budget writes** target the **campaign** `daily_budget`, which only applies
   when the campaign uses Campaign Budget Optimization (CBO); otherwise budget
   lives on the ad set.

@@ -100,9 +100,13 @@ export async function addCampaignMock(
         ads: [
           {
             id: `ad_${n}_1_1`,
-            name: `${input.creativeType[0]}${input.creativeType
-              .slice(1)
-              .toLowerCase()} ad 1`,
+            name: `Quảng cáo ${
+              input.creativeType === "VIDEO"
+                ? "video"
+                : input.creativeType === "CAROUSEL"
+                  ? "carousel"
+                  : "hình ảnh"
+            } 1`,
             status: "ACTIVE",
             creativeType: input.creativeType,
             headline: input.headline,

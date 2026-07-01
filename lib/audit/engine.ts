@@ -7,7 +7,10 @@ import type {
   CheckStatus,
 } from "../types";
 
-// Weighted penalties applied to a starting score of 100.
+// Ngưỡng CPA "cao" tính theo VND.
+const HIGH_CPA = 1_200_000;
+
+// Điểm trừ theo trạng thái, áp dụng lên điểm khởi đầu 100.
 const PENALTY: Record<CheckStatus, number> = { pass: 0, warn: 6, fail: 14 };
 
 function grade(score: number): AuditResult["grade"] {
@@ -26,93 +29,95 @@ export function runAudit(
   const checks: AuditCheck[] = [];
   const m = summary.metrics;
 
-  // 1. Account-level ROAS
+  // 1. ROAS toàn tài khoản
   checks.push({
     id: "account_roas",
-    title: "Account is profitable overall",
+    title: "Tài khoản có lợi nhuận tổng thể",
     category: "profitability",
     status: m.roas >= 2 ? "pass" : m.roas >= 1 ? "warn" : "fail",
-    detail: `Blended account ROAS is ${roasFmt(m.roas)} across ${money(
+    detail: `ROAS tổng của tài khoản là ${roasFmt(m.roas)} trên ${money(
       m.spend,
-    )} spend.`,
+    )} chi tiêu.`,
     recommendation:
       m.roas < 1
-        ? "The account is losing money. Pause the worst campaigns and shift budget to winners."
+        ? "Tài khoản đang lỗ. Hãy tạm dừng các chiến dịch tệ nhất và dồn ngân sách cho chiến dịch hiệu quả."
         : m.roas < 2
-          ? "Margins are thin — tighten targeting and refresh creative on mid-tier campaigns."
+          ? "Biên lợi nhuận đang mỏng — siết lại nhắm chọn và làm mới nội dung ở các chiến dịch tầm trung."
           : undefined,
   });
 
-  // 2. Unprofitable active campaigns
+  // 2. Chiến dịch đang lỗ
   const losers = active.filter((c) => c.metrics.roas < 1);
   checks.push({
     id: "unprofitable",
-    title: "No active campaign is losing money",
+    title: "Không có chiến dịch nào đang lỗ",
     category: "profitability",
     status: losers.length === 0 ? "pass" : losers.length > 1 ? "fail" : "warn",
     detail: losers.length
-      ? `${losers.length} active campaign(s) under 1.0x ROAS: ${losers
+      ? `${losers.length} chiến dịch đang chạy có ROAS dưới 1.0x: ${losers
           .map((c) => `"${c.name}"`)
           .join(", ")}.`
-      : "Every active, spending campaign is at or above breakeven.",
+      : "Mọi chiến dịch đang chạy và có chi tiêu đều ở mức hòa vốn trở lên.",
     recommendation: losers.length
-      ? "Pause or cut budget on sub-1.0x campaigns this week."
+      ? "Tạm dừng hoặc giảm ngân sách các chiến dịch dưới 1.0x trong tuần này."
       : undefined,
   });
 
-  // 3. Low CTR
+  // 3. CTR thấp
   const lowCtr = active.filter((c) => c.metrics.ctr < 1);
   checks.push({
     id: "ctr",
-    title: "Creatives are engaging (CTR ≥ 1%)",
+    title: "Quảng cáo thu hút (CTR ≥ 1%)",
     category: "efficiency",
     status: lowCtr.length === 0 ? "pass" : lowCtr.length > 1 ? "fail" : "warn",
     detail: lowCtr.length
-      ? `${lowCtr.length} campaign(s) under 1% CTR — e.g. "${lowCtr[0].name}" at ${pct(
+      ? `${lowCtr.length} chiến dịch có CTR dưới 1% — ví dụ "${lowCtr[0].name}" chỉ ${pct(
           lowCtr[0].metrics.ctr,
         )}.`
-      : "All active campaigns have a healthy click-through rate.",
+      : "Tất cả chiến dịch đang chạy đều có tỉ lệ nhấp lành mạnh.",
     recommendation: lowCtr.length
-      ? "Test new hooks/thumbnails; pause the lowest-CTR ad in each weak set."
+      ? "Thử các hook/thumbnail mới; tạm dừng quảng cáo có CTR thấp nhất trong mỗi nhóm yếu."
       : undefined,
   });
 
-  // 4. High CPA
-  const pricey = active.filter((c) => c.metrics.conversions > 0 && c.metrics.cpa > 45);
+  // 4. CPA cao
+  const pricey = active.filter(
+    (c) => c.metrics.conversions > 0 && c.metrics.cpa > HIGH_CPA,
+  );
   checks.push({
     id: "cpa",
-    title: "Cost per conversion is under control",
+    title: "Chi phí mỗi chuyển đổi trong tầm kiểm soát",
     category: "efficiency",
-    status: pricey.length === 0 ? "pass" : pricey.length > 1 ? "warn" : "warn",
+    status: pricey.length === 0 ? "pass" : "warn",
     detail: pricey.length
-      ? `${pricey.length} campaign(s) above $45 CPA — highest is "${
+      ? `${pricey.length} chiến dịch có CPA trên ${money(HIGH_CPA)} — cao nhất là "${
           pricey.sort((a, b) => b.metrics.cpa - a.metrics.cpa)[0].name
-        }" at ${money(pricey[0].metrics.cpa)}.`
-      : "No campaign is paying an unusually high cost per conversion.",
+        }" ở mức ${money(pricey[0].metrics.cpa)}.`
+      : "Không có chiến dịch nào trả chi phí mỗi chuyển đổi cao bất thường.",
     recommendation: pricey.length
-      ? "Switch to cost-cap bidding or tighten the audience on high-CPA campaigns."
+      ? "Chuyển sang đặt giá thầu giới hạn chi phí (cost cap) hoặc siết đối tượng ở các chiến dịch CPA cao."
       : undefined,
   });
 
-  // 5. Budget concentration
+  // 5. Tập trung chi tiêu
   const totalSpend = active.reduce((s, c) => s + c.metrics.spend, 0);
   const top = [...active].sort((a, b) => b.metrics.spend - a.metrics.spend)[0];
   const share = top && totalSpend ? top.metrics.spend / totalSpend : 0;
   checks.push({
     id: "concentration",
-    title: "Spend isn't over-concentrated",
+    title: "Chi tiêu không bị dồn quá mức",
     category: "structure",
     status: share > 0.6 ? "warn" : "pass",
     detail: top
-      ? `"${top.name}" accounts for ${pct(share * 100)} of account spend.`
-      : "No active spend to evaluate.",
+      ? `"${top.name}" chiếm ${pct(share * 100)} tổng chi tiêu của tài khoản.`
+      : "Chưa có chi tiêu đang hoạt động để đánh giá.",
     recommendation:
       share > 0.6
-        ? "Diversify — a single campaign carrying most of the budget is a concentration risk."
+        ? "Hãy đa dạng hóa — để một chiến dịch gánh phần lớn ngân sách là rủi ro tập trung."
         : undefined,
   });
 
-  // 6. Audience overlap (same audience used by multiple active campaigns)
+  // 6. Trùng lặp đối tượng
   const audienceMap = new Map<string, Set<string>>();
   for (const c of active) {
     for (const as of c.adSets) {
@@ -124,32 +129,32 @@ export function runAudit(
   const overlaps = [...audienceMap.entries()].filter(([, ids]) => ids.size > 1);
   checks.push({
     id: "overlap",
-    title: "Audiences don't overlap across campaigns",
+    title: "Đối tượng không trùng giữa các chiến dịch",
     category: "structure",
     status: overlaps.length ? "warn" : "pass",
     detail: overlaps.length
-      ? `${overlaps.length} audience(s) are targeted by more than one campaign (e.g. "${overlaps[0][0]}") — they may bid against each other.`
-      : "Each audience is used by a single campaign.",
+      ? `${overlaps.length} đối tượng đang được nhắm bởi nhiều chiến dịch (ví dụ "${overlaps[0][0]}") — chúng có thể cạnh tranh đấu giá lẫn nhau.`
+      : "Mỗi đối tượng chỉ được dùng bởi một chiến dịch.",
     recommendation: overlaps.length
-      ? "Consolidate overlapping audiences or add exclusions to avoid internal auction competition."
+      ? "Gộp các đối tượng trùng lặp hoặc thêm loại trừ để tránh tự cạnh tranh trong đấu giá."
       : undefined,
   });
 
-  // 7. Scaling opportunity
+  // 7. Cơ hội tăng tốc
   const winners = active.filter((c) => c.metrics.roas >= 3);
   checks.push({
     id: "scaling",
-    title: "Winners are being scaled",
+    title: "Chiến dịch hiệu quả đang được tăng tốc",
     category: "scaling",
     status: winners.length === 0 ? "warn" : "pass",
     detail: winners.length
-      ? `${winners.length} campaign(s) above 3.0x ROAS are scaling candidates: ${winners
+      ? `${winners.length} chiến dịch trên 3.0x ROAS là ứng viên để tăng tốc: ${winners
           .map((c) => `"${c.name}"`)
           .join(", ")}.`
-      : "No campaign is currently above a 3.0x ROAS scaling threshold.",
+      : "Hiện chưa có chiến dịch nào vượt ngưỡng 3.0x ROAS để tăng tốc.",
     recommendation: winners.length
-      ? "Increase budgets ~20% every few days on these while ROAS holds."
-      : "Find a winner: keep creative-testing until a campaign clears 3.0x ROAS.",
+      ? "Tăng ngân sách ~20% mỗi vài ngày cho các chiến dịch này khi ROAS còn giữ vững."
+      : "Hãy tìm chiến dịch thắng: tiếp tục thử nội dung cho tới khi một chiến dịch vượt 3.0x ROAS.",
   });
 
   const counts = checks.reduce(
@@ -161,7 +166,7 @@ export function runAudit(
     Math.round(checks.reduce((s, c) => s - PENALTY[c.status], 100)),
   );
 
-  // Sort: failures first, then warnings, then passes.
+  // Sắp xếp: lỗi trước, rồi cảnh báo, rồi đạt.
   const order: Record<CheckStatus, number> = { fail: 0, warn: 1, pass: 2 };
   checks.sort((a, b) => order[a.status] - order[b.status]);
 

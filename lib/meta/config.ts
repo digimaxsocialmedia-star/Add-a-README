@@ -8,6 +8,9 @@ export interface MetaConfig {
   datePreset: string;
   conversionActionType?: string;
   pageId?: string;
+  /** Hệ số quy đổi đơn vị nhỏ nhất → đơn vị chính của tiền tệ tài khoản.
+   *  USD/EUR = 100 (cents). VND là tiền tệ không có đơn vị lẻ → đặt = 1. */
+  currencyOffset: number;
 }
 
 /** True when enough credentials are present to talk to the real Graph API. */
@@ -38,6 +41,8 @@ export function getMetaConfig(): MetaConfig {
     datePreset: process.env.META_INSIGHTS_DATE_PRESET || "last_30d",
     conversionActionType: process.env.META_CONVERSION_ACTION_TYPE,
     pageId: process.env.META_PAGE_ID,
+    // Tài khoản VND nên đặt META_CURRENCY_OFFSET=1.
+    currencyOffset: Number(process.env.META_CURRENCY_OFFSET) || 100,
   };
 }
 
@@ -47,5 +52,5 @@ export function getAccountLabel(): string {
     const id = raw.startsWith("act_") ? raw : `act_${raw}`;
     return `Meta · ${id}`;
   }
-  return "Acme Store — Ad Account (demo)";
+  return "Cửa hàng Acme — Tài khoản QC (demo)";
 }
