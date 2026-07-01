@@ -651,6 +651,51 @@ export async function addCampaignLive(
   return { campaign, warnings };
 }
 
+/**
+ * Nhân bản một chiến dịch bằng endpoint `/copies` của Meta.
+ *
+ * `deep_copy=true` sao chép cả nhóm quảng cáo + quảng cáo con; `status_option`
+ * đặt bản sao (và con của nó) về PAUSED để không bao giờ tự tiêu tiền. Sau khi
+ * sao chép, đọc lại chiến dịch mới để trả về đầy đủ chỉ số/cấu trúc.
+ */
+export async function duplicateCampaignLive(
+  id: string,
+): Promise<CreateCampaignResult> {
+  const warnings: string[] = [];
+  const res = await graphPost(`${id}/copies`, {
+    deep_copy: "true",
+    status_option: "PAUSED",
+    rename_options: JSON.stringify({ rename_suffix: " (bản sao)" }),
+  });
+  const newId = (res.copied_campaign_id as string) || (res.id as string);
+  if (!newId) {
+    throw new Error("Meta không trả về ID chiến dịch bản sao.");
+  }
+
+  const campaign = await getCampaignLive(newId);
+  if (campaign) return { campaign, warnings };
+
+  // Sao chép thành công nhưng chưa đọc lại được (độ trễ lập chỉ mục) — trả về
+  // khung tối thiểu kèm cảnh báo.
+  warnings.push(
+    "Đã tạo bản sao nhưng chưa tải được chi tiết ngay — hãy làm mới sau giây lát.",
+  );
+  return {
+    campaign: {
+      id: newId,
+      name: "(bản sao)",
+      objective: "OUTCOME_TRAFFIC",
+      status: "PAUSED",
+      dailyBudget: 0,
+      createdAt: new Date().toISOString().slice(0, 10),
+      daily: [],
+      adSets: [],
+      metrics: derive(empty()),
+    },
+    warnings,
+  };
+}
+
 function empty(): Metrics {
   return { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
 }

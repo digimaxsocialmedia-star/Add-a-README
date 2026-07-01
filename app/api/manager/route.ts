@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  duplicateCampaign,
   getManagerTree,
   setAdSetStatus,
   setAdStatus,
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
   }
 
   const level: Level = body.level ?? "campaign";
+  let duplicated: { name: string; warnings: string[] } | undefined;
   try {
     if (body.op === "status" && body.id && body.status) {
       await setStatus(level, body.id, body.status);
@@ -62,6 +64,9 @@ export async function POST(req: Request) {
     } else if (body.op === "bulk" && Array.isArray(body.ids) && body.action) {
       const status: EntityStatus = body.action === "pause" ? "PAUSED" : "ACTIVE";
       for (const id of body.ids) await setStatus(level, id, status);
+    } else if (body.op === "duplicate" && body.id) {
+      const result = await duplicateCampaign(body.id);
+      duplicated = { name: result.campaign.name, warnings: result.warnings };
     } else {
       return NextResponse.json({ error: "Unknown operation" }, { status: 400 });
     }
@@ -73,5 +78,5 @@ export async function POST(req: Request) {
   }
 
   const tree = await getManagerTree();
-  return NextResponse.json({ tree });
+  return NextResponse.json({ tree, duplicated });
 }

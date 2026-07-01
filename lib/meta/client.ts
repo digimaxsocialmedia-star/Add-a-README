@@ -60,6 +60,12 @@ export function addCampaign(
   return isLiveMode() ? live.addCampaignLive(input) : mock.addCampaignMock(input);
 }
 
+export function duplicateCampaign(id: string): Promise<CreateCampaignResult> {
+  return isLiveMode()
+    ? live.duplicateCampaignLive(id)
+    : mock.duplicateCampaignMock(id);
+}
+
 export function setCampaignStatus(
   id: string,
   status: "ACTIVE" | "PAUSED",

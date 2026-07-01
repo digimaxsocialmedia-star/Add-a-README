@@ -124,6 +124,49 @@ export async function addCampaignMock(
   return { campaign: withMetrics(campaign), warnings: [] };
 }
 
+export async function duplicateCampaignMock(
+  id: string,
+): Promise<CreateCampaignResult> {
+  const store = getStore();
+  const src = store.campaigns.find((c) => c.id === id);
+  if (!src) {
+    throw new Error("Không tìm thấy chiến dịch để nhân bản.");
+  }
+  store.seq += 1;
+  const n = store.seq;
+  const empty = { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
+
+  // Sao chép cấu trúc (nhóm QC + quảng cáo + ngân sách + đối tượng) nhưng đặt
+  // lại hiệu suất về 0 và trạng thái PAUSED — bản sao chưa từng chạy.
+  const clone: Campaign = {
+    id: `cmp_${n}`,
+    name: `${src.name} (bản sao)`,
+    objective: src.objective,
+    status: "PAUSED",
+    dailyBudget: src.dailyBudget,
+    createdAt: new Date().toISOString().slice(0, 10),
+    daily: [],
+    adSets: src.adSets.map((as, asIdx) => ({
+      id: `adset_${n}_${asIdx + 1}`,
+      name: as.name,
+      status: "PAUSED",
+      dailyBudget: as.dailyBudget,
+      audience: as.audience,
+      ads: as.ads.map((ad, adIdx) => ({
+        id: `ad_${n}_${asIdx + 1}_${adIdx + 1}`,
+        name: ad.name,
+        status: "PAUSED",
+        creativeType: ad.creativeType,
+        headline: ad.headline,
+        primaryText: ad.primaryText,
+        metrics: { ...empty },
+      })),
+    })),
+  };
+  store.campaigns.push(clone);
+  return { campaign: withMetrics(clone), warnings: [] };
+}
+
 export async function setCampaignStatusMock(
   id: string,
   status: "ACTIVE" | "PAUSED",

@@ -34,7 +34,8 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **➕ Create ads** — a campaign → ad set → ad wizard (objective, audience,
   budget, creative) that launches a new campaign.
 - **🎛️ Ads Manager** — a 3-level Campaign → Ad set → Ad tree with inline
-  on/off toggles, inline budget editing, and bulk pause/activate.
+  on/off toggles, inline budget editing, bulk pause/activate, and one-click
+  **campaign duplication** (deep-copies ad sets + ads as a paused draft).
 - **🖼️ Creative Studio** — performance by creative format, best/worst ad
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
 - **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
@@ -202,6 +203,7 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
 | Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
 | Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → `/adcreatives` → `/ads`, all **PAUSED** |
+| Duplicate a campaign | `POST /<campaign_id>/copies` `deep_copy=true&status_option=PAUSED` (deep-copies ad sets + ads, paused) |
 
 ### Field mapping & caveats
 
