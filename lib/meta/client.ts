@@ -14,10 +14,13 @@
 
 import { getAccountLabel, getMode, isLiveMode } from "./config";
 import { derive, sumMetrics } from "../format";
+import { classifyAudience } from "../audiences/classify";
 import type {
   AccountSummary,
   AdRow,
+  AudienceRow,
   CampaignWithMetrics,
+  ManagerAdSet,
   ManagerCampaign,
   Metrics,
   NewCampaignInput,
@@ -142,4 +145,30 @@ export async function getManagerTree(): Promise<ManagerCampaign[]> {
       };
     }),
   }));
+}
+
+/** Gộp các nhóm quảng cáo theo tệp đối tượng, kèm hiệu suất tổng hợp. */
+export async function getAudiences(): Promise<AudienceRow[]> {
+  const tree = await getManagerTree();
+  const byName = new Map<
+    string,
+    { adSets: ManagerAdSet[]; campaigns: Set<string> }
+  >();
+  for (const c of tree) {
+    for (const as of c.adSets) {
+      const e = byName.get(as.audience) ?? { adSets: [], campaigns: new Set() };
+      e.adSets.push(as);
+      e.campaigns.add(c.name);
+      byName.set(as.audience, e);
+    }
+  }
+  const rows: AudienceRow[] = [...byName.entries()].map(([name, e]) => ({
+    name,
+    type: classifyAudience(name),
+    campaignCount: e.campaigns.size,
+    adSetCount: e.adSets.length,
+    campaigns: [...e.campaigns],
+    metrics: derive(sumMetrics(e.adSets.map((a) => a.metrics))),
+  }));
+  return rows.sort((a, b) => b.metrics.spend - a.metrics.spend);
 }

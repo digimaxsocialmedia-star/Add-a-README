@@ -29,6 +29,9 @@ realistic **mock data** out of the box — no Meta account required — and uses
   on/off toggles, inline budget editing, and bulk pause/activate.
 - **🖼️ Creative Studio** — performance by creative format, best/worst ad
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
+- **👥 Audience Studio** — performance by audience (grouped from ad sets),
+  audience-type classification, overlap warnings, and AI-suggested new
+  audiences to test (lookalikes, interests, retargeting…).
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
@@ -78,6 +81,7 @@ app/
   manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
+  audiences/            Audience Studio + AI audience ideas
   automation/           Automation rules
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
@@ -95,6 +99,7 @@ lib/
   automation/engine.ts  Rule evaluation
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
+  audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy) + heuristic fallbacks
   format.ts             Metric formatting & derivation
 ```

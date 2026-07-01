@@ -251,3 +251,30 @@ export interface Alert {
   title: string;
   detail: string;
 }
+
+// ---- Audience Studio ----
+
+export type AudienceType = "lookalike" | "custom" | "interest" | "broad" | "saved";
+
+export interface AudienceRow {
+  name: string;
+  type: AudienceType;
+  campaignCount: number;
+  adSetCount: number;
+  campaigns: string[];
+  metrics: DerivedMetrics;
+}
+
+export interface AudienceIdea {
+  name: string;
+  type: AudienceType;
+  size: string; // "hẹp" | "vừa" | "rộng"
+  rationale: string;
+}
+
+export interface AudienceIdeaResult {
+  ideas: AudienceIdea[];
+  source: "claude" | "heuristic";
+  model?: string;
+  note?: string;
+}

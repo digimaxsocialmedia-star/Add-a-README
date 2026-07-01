@@ -1,11 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { OBJECTIVE_LABELS } from "../types";
 import { money, pct, roasFmt } from "../format";
+import { AUDIENCE_TYPE_LABELS } from "../audiences/classify";
 import type {
   AdCopyResult,
   AdCopyVariant,
   AiResult,
   AiSuggestion,
+  AudienceIdea,
+  AudienceIdeaResult,
+  AudienceRow,
   CampaignWithMetrics,
 } from "../types";
 
@@ -358,4 +362,171 @@ function truncate(s: string, n: number) {
 }
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// -----------------------------------------------------------------------------
+// AI gợi ý tệp đối tượng mới (Studio đối tượng)
+// -----------------------------------------------------------------------------
+
+const AUDIENCE_SCHEMA = {
+  type: "object",
+  properties: {
+    ideas: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          type: {
+            type: "string",
+            enum: ["lookalike", "custom", "interest", "broad", "saved"],
+          },
+          size: { type: "string", enum: ["hẹp", "vừa", "rộng"] },
+          rationale: { type: "string" },
+        },
+        required: ["name", "type", "size", "rationale"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["ideas"],
+  additionalProperties: false,
+} as const;
+
+function buildAudienceTable(audiences: AudienceRow[]): string {
+  return audiences
+    .map(
+      (a) =>
+        `- ${a.name} [${AUDIENCE_TYPE_LABELS[a.type]}] | chi ${money(
+          a.metrics.spend,
+        )} | ROAS ${roasFmt(a.metrics.roas)} | CTR ${pct(a.metrics.ctr)} | ${
+          a.metrics.conversions
+        } chuyển đổi`,
+    )
+    .join("\n");
+}
+
+export async function generateAudienceIdeas(
+  audiences: AudienceRow[],
+): Promise<AudienceIdeaResult> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      ...heuristicAudienceIdeas(audiences),
+      source: "heuristic",
+      note: "Đặt ANTHROPIC_API_KEY để nhận gợi ý từ Claude. Đang hiển thị gợi ý theo quy tắc.",
+    };
+  }
+  try {
+    const client = new Anthropic();
+    const system = `Bạn là chuyên gia nhắm chọn đối tượng quảng cáo Meta (Facebook) cho nhà quảng cáo Việt Nam.
+Dựa trên các tệp đối tượng hiện có và hiệu suất của chúng, hãy đề xuất các tệp đối tượng MỚI đáng thử nghiệm.
+
+QUAN TRỌNG: Viết HOÀN TOÀN BẰNG TIẾNG VIỆT.
+
+Hướng dẫn:
+- Ưu tiên các nước đi có đòn bẩy: tạo Lookalike từ tệp hiệu quả nhất, mở rộng theo sở thích liên quan,
+  thu hẹp/mở rộng tệp tùy chỉnh (retargeting), thử tệp rộng để Advantage+ tối ưu.
+- Mỗi gợi ý nêu rõ lý do dựa trên dữ liệu (dẫn tên tệp/chỉ số khi hợp lý).
+- type ∈ lookalike | custom | interest | broad | saved. size ∈ hẹp | vừa | rộng.
+- Trả về 4-6 gợi ý, sắp xếp theo mức tiềm năng giảm dần.`;
+    const user = `Các tệp đối tượng hiện tại (tiền tệ VND):\n\n${buildAudienceTable(
+      audiences,
+    )}\n\nHãy đề xuất các tệp đối tượng mới nên thử.`;
+
+    const params = {
+      model: MODEL,
+      max_tokens: 3072,
+      thinking: { type: "adaptive" },
+      system,
+      output_config: { format: { type: "json_schema", schema: AUDIENCE_SCHEMA } },
+      messages: [{ role: "user", content: user }],
+    };
+    const response = (await client.messages.create(params as never)) as {
+      content: Array<{ type: string; text?: string }>;
+    };
+    const textBlock = response.content.find(
+      (b) => b.type === "text" && typeof b.text === "string",
+    );
+    if (!textBlock?.text) throw new Error("No text block in response");
+    const parsed = JSON.parse(textBlock.text) as { ideas: AudienceIdea[] };
+    if (!Array.isArray(parsed.ideas) || parsed.ideas.length === 0) {
+      throw new Error("Empty ideas");
+    }
+    return { ideas: parsed.ideas, source: "claude", model: MODEL };
+  } catch (err) {
+    return {
+      ...heuristicAudienceIdeas(audiences),
+      source: "heuristic",
+      note: `Gọi Claude thất bại (${
+        err instanceof Error ? err.message : "lỗi không xác định"
+      }). Đang hiển thị gợi ý theo quy tắc.`,
+    };
+  }
+}
+
+function heuristicAudienceIdeas(
+  audiences: AudienceRow[],
+): { ideas: AudienceIdea[] } {
+  const ideas: AudienceIdea[] = [];
+  const spending = audiences.filter((a) => a.metrics.spend > 0);
+  const best = [...spending].sort((a, b) => b.metrics.roas - a.metrics.roas)[0];
+
+  if (best) {
+    ideas.push({
+      name: `Lookalike 1% từ khách của "${best.name}"`,
+      type: "lookalike",
+      size: "hẹp",
+      rationale: `"${best.name}" đang hiệu quả nhất (ROAS ${roasFmt(
+        best.metrics.roas,
+      )}). Tạo Lookalike 1% từ người chuyển đổi của tệp này để tìm khách tương tự.`,
+    });
+    ideas.push({
+      name: `Lookalike 3-5% từ khách của "${best.name}"`,
+      type: "lookalike",
+      size: "rộng",
+      rationale:
+        "Mở rộng quy mô tìm khách: Lookalike 3-5% giữ được sự tương đồng nhưng tiếp cận rộng hơn để tăng tốc.",
+    });
+  }
+
+  const hasInterest = audiences.some((a) => a.type === "interest");
+  ideas.push({
+    name: hasInterest
+      ? "Mở rộng sở thích liên quan (chồng lấn 2-3 sở thích)"
+      : "Nhắm theo sở thích cốt lõi của ngành hàng",
+    type: "interest",
+    size: "vừa",
+    rationale:
+      "Thử nhóm sở thích liên quan để mở rộng đầu phễu ngoài các tệp hiện có; chồng lấn 2-3 sở thích giúp lọc đúng người quan tâm.",
+  });
+
+  ideas.push({
+    name: "Retargeting 7 ngày: đã xem sản phẩm nhưng chưa mua",
+    type: "custom",
+    size: "hẹp",
+    rationale:
+      "Tệp tùy chỉnh có ý định cao thường cho ROAS tốt nhất — nhắm lại người vừa xem sản phẩm trong 7 ngày để chốt đơn.",
+  });
+
+  ideas.push({
+    name: "Tệp rộng (để Advantage+ tự tối ưu)",
+    type: "broad",
+    size: "rộng",
+    rationale:
+      "Để thuật toán Meta tự tìm khách với tệp rộng + tín hiệu pixel tốt — thường hiệu quả khi đã đủ dữ liệu chuyển đổi.",
+  });
+
+  const loser = [...spending].sort((a, b) => a.metrics.roas - b.metrics.roas)[0];
+  if (loser && loser.metrics.roas < 1) {
+    ideas.push({
+      name: `Thay thế/loại trừ "${loser.name}"`,
+      type: "custom",
+      size: "vừa",
+      rationale: `"${loser.name}" đang lỗ (ROAS ${roasFmt(
+        loser.metrics.roas,
+      )}). Cân nhắc loại trừ tệp này khỏi các nhóm khác và thử tệp mới thay thế.`,
+    });
+  }
+
+  return { ideas: ideas.slice(0, 6) };
 }
