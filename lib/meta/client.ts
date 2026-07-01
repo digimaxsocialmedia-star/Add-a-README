@@ -17,6 +17,7 @@ import { derive, sumMetrics } from "../format";
 import { classifyAudience } from "../audiences/classify";
 import type {
   AccountSummary,
+  AdFatigue,
   AdRow,
   AudienceRow,
   CampaignWithMetrics,
@@ -79,6 +80,10 @@ export function updateCampaignDailyBudget(
 
 export function getAds(): Promise<AdRow[]> {
   return isLiveMode() ? live.getAdsLive() : mock.getAdsMock();
+}
+
+export function getAdFatigue(): Promise<AdFatigue[]> {
+  return isLiveMode() ? live.getAdFatigueLive() : mock.getAdFatigueMock();
 }
 
 export function setAdSetStatus(

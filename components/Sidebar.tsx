@@ -15,6 +15,7 @@ import {
   Images,
   Users,
   Rocket,
+  Flame,
 } from "lucide-react";
 
 const NAV = [
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/manager", label: "Quản lý quảng cáo", icon: SlidersHorizontal },
   { href: "/create", label: "Tạo quảng cáo", icon: PlusCircle },
   { href: "/creatives", label: "Xưởng nội dung", icon: Images },
+  { href: "/fatigue", label: "Độ chai nội dung", icon: Flame },
   { href: "/audiences", label: "Studio đối tượng", icon: Users },
   { href: "/automation", label: "Tự động hóa", icon: Zap },
   { href: "/autopilot", label: "Tự lái AI", icon: Rocket },

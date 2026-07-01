@@ -3,8 +3,10 @@
 
 import { getStore } from "../mock/store";
 import { derive, sumMetrics } from "../format";
+import { classifyFatigue } from "../fatigue/engine";
 import type {
   AccountSummary,
+  AdFatigue,
   AdRow,
   Campaign,
   CampaignWithMetrics,
@@ -201,4 +203,55 @@ export async function setAdStatusMock(
       }
     }
   }
+}
+
+function seedFromId(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function rngFrom(seed: number) {
+  let s = seed;
+  return () => {
+    s |= 0;
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export async function getAdFatigueMock(): Promise<AdFatigue[]> {
+  const ads = await getAdsMock();
+  return ads
+    .filter((a) => a.metrics.spend > 0)
+    .map((a) => {
+      const rng = rngFrom(seedFromId(a.id));
+      const fatigued = rng() < 0.35;
+      const daysRunning = 16 + Math.floor(rng() * 15); // 16-30 ngày
+      const frequency = fatigued ? 3.4 + rng() * 1.8 : 1.3 + rng() * 1.3;
+      const ctrChangePct = fatigued ? -(20 + rng() * 30) : -10 + rng() * 18;
+      const v = classifyFatigue({ frequency, ctrChangePct, daysRunning });
+      return {
+        id: a.id,
+        name: a.name,
+        campaignName: a.campaignName,
+        creativeType: a.creativeType,
+        status: a.status,
+        spend: a.metrics.spend,
+        ctr: a.metrics.ctr,
+        frequency,
+        ctrChangePct,
+        daysRunning,
+        fatigue: v.fatigue,
+        score: v.score,
+        reasons: v.reasons,
+        recommendation: v.recommendation,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }

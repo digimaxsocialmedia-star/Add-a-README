@@ -320,3 +320,24 @@ export interface BudgetPlan {
 }
 
 export type ThresholdSuggestions = Record<RuleMetric, number>;
+
+// ---- Ad fatigue (độ "chai" nội dung) ----
+
+export type FatigueStatus = "healthy" | "warning" | "fatigued";
+
+export interface AdFatigue {
+  id: string;
+  name: string;
+  campaignName: string;
+  creativeType: CreativeType;
+  status: EntityStatus;
+  spend: number;
+  ctr: number;
+  frequency: number; // số lần trung bình 1 người thấy quảng cáo
+  ctrChangePct: number; // CTR gần đây so với trước đó (âm = giảm)
+  daysRunning: number;
+  fatigue: FatigueStatus;
+  score: number; // 0-100, cao = chai nặng
+  reasons: string[];
+  recommendation: string;
+}

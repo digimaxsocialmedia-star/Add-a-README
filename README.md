@@ -37,6 +37,9 @@ realistic **mock data** out of the box — no Meta account required — and uses
   on/off toggles, inline budget editing, and bulk pause/activate.
 - **🖼️ Creative Studio** — performance by creative format, best/worst ad
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
+- **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
+  CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
+  refreshing or pausing before budget is wasted.
 - **👥 Audience Studio** — performance by audience (grouped from ad sets),
   audience-type classification, overlap warnings, and AI-suggested new
   audiences to test (lookalikes, interests, retargeting…).
@@ -116,6 +119,7 @@ lib/
   optimizer/engine.ts   Performance-weighted budget reallocation
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
+  fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender

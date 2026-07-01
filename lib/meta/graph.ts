@@ -11,8 +11,10 @@
 
 import { getMetaConfig } from "./config";
 import { derive } from "../format";
+import { classifyFatigue } from "../fatigue/engine";
 import type {
   AccountSummary,
+  AdFatigue,
   AdRow,
   AdSet,
   CampaignWithMetrics,
@@ -389,6 +391,99 @@ export async function setAdStatusLive(
   status: "ACTIVE" | "PAUSED",
 ): Promise<void> {
   await graphPost(id, { status });
+}
+
+interface AdDailyInsight {
+  ad_id: string;
+  date_start?: string;
+  ctr?: string;
+  frequency?: string;
+  impressions?: string;
+  spend?: string;
+}
+
+export async function getAdFatigueLive(): Promise<AdFatigue[]> {
+  const { adAccountId, datePreset } = getMetaConfig();
+  const [rawAds, rows, rawCampaigns] = await Promise.all([
+    graphGetAll<{
+      id: string;
+      name?: string;
+      status?: string;
+      campaign_id?: string;
+      created_time?: string;
+    }>(`${adAccountId}/ads`, {
+      fields: "id,name,status,campaign_id,created_time",
+    }),
+    graphGetAll<AdDailyInsight>(`${adAccountId}/insights`, {
+      level: "ad",
+      fields: "ad_id,ctr,frequency,impressions,spend",
+      date_preset: datePreset,
+      time_increment: "1",
+    }),
+    graphGetAll<RawCampaign>(`${adAccountId}/campaigns`, { fields: "id,name" }),
+  ]);
+
+  const campName = new Map<string, string>();
+  for (const c of rawCampaigns) campName.set(c.id, c.name ?? c.id);
+
+  const byAd = new Map<string, AdDailyInsight[]>();
+  for (const r of rows) {
+    const list = byAd.get(r.ad_id) ?? [];
+    list.push(r);
+    byAd.set(r.ad_id, list);
+  }
+
+  const avg = (xs: number[]) =>
+    xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+
+  const out: AdFatigue[] = [];
+  for (const ad of rawAds) {
+    const days = (byAd.get(ad.id) ?? []).sort((a, b) =>
+      (a.date_start ?? "").localeCompare(b.date_start ?? ""),
+    );
+    const spend = days.reduce((s, d) => s + (Number(d.spend) || 0), 0);
+    if (spend <= 0) continue;
+
+    const ctrs = days.map((d) => Number(d.ctr) || 0);
+    const imprs = days.map((d) => Number(d.impressions) || 0);
+    const totalImpr = imprs.reduce((a, b) => a + b, 0);
+    const ctr = totalImpr
+      ? days.reduce((s, d) => s + (Number(d.ctr) || 0) * (Number(d.impressions) || 0), 0) / totalImpr
+      : avg(ctrs);
+    const recent = days.slice(-3);
+    const earlier = days.slice(0, 3);
+    const ctrRecent = avg(recent.map((d) => Number(d.ctr) || 0));
+    const ctrEarlier = avg(earlier.map((d) => Number(d.ctr) || 0));
+    const ctrChangePct = ctrEarlier ? ((ctrRecent - ctrEarlier) / ctrEarlier) * 100 : 0;
+    const frequency = avg(recent.map((d) => Number(d.frequency) || 0));
+    const daysRunning = ad.created_time
+      ? Math.max(
+          1,
+          Math.round(
+            (Date.now() - new Date(ad.created_time).getTime()) / 86_400_000,
+          ),
+        )
+      : days.length;
+
+    const v = classifyFatigue({ frequency, ctrChangePct, daysRunning });
+    out.push({
+      id: ad.id,
+      name: ad.name ?? ad.id,
+      campaignName: ad.campaign_id ? campName.get(ad.campaign_id) ?? "" : "",
+      creativeType: "IMAGE",
+      status: ad.status === "ACTIVE" ? "ACTIVE" : "PAUSED",
+      spend,
+      ctr,
+      frequency,
+      ctrChangePct,
+      daysRunning,
+      fatigue: v.fatigue,
+      score: v.score,
+      reasons: v.reasons,
+      recommendation: v.recommendation,
+    });
+  }
+  return out.sort((a, b) => b.score - a.score);
 }
 
 export async function updateCampaignDailyBudgetLive(
