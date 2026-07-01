@@ -24,6 +24,10 @@ realistic **mock data** out of the box — no Meta account required — and uses
   top campaigns, alerts) over SMTP. Preview in-app, send on demand, or point a
   cron at `GET /api/report/email` for daily/weekly delivery. Falls back to a
   preview when SMTP isn't configured.
+- **🔔 Instant alerts (Telegram / Zalo)** — push anomaly alerts to your phone
+  the moment they appear. Test + send on demand from the Reports page; auto-push
+  when Autopilot is on; or drive `GET /api/alerts/notify` from a cron. De-dupes
+  so you're not spammed with the same alert.
 - **🛡️ Account Audit** — a health score (0–100 + letter grade) from automated
   checks across profitability, efficiency, structure and scaling, each with a
   concrete fix.
@@ -115,6 +119,8 @@ lib/
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender
+  notify/channels.ts    Telegram + Zalo OA senders
+  alerts/notify.ts      Instant-alert runner (new-alert de-dupe)
   format.ts             Metric formatting & derivation
 ```
 

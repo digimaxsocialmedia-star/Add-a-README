@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStore, addLog } from "@/lib/mock/store";
 import { runAutomationRules } from "@/lib/automation/run";
+import { runAlertNotifications } from "@/lib/alerts/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ...state(), skipped: "Tự lái đang tắt" });
     }
     const { applied } = await runAutomationRules("auto");
+    // Đẩy cảnh báo mới qua Telegram/Zalo (nếu có cấu hình) — không chặn tick.
+    try {
+      await runAlertNotifications(false);
+    } catch {
+      /* bỏ qua lỗi gửi cảnh báo */
+    }
     return NextResponse.json({ ...state(), applied });
   }
 

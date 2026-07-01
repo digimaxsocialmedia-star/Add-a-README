@@ -298,6 +298,7 @@ export interface Store {
   settings: AutopilotSettings;
   log: LogEntry[];
   cooldowns: Record<string, string>; // "ruleId:campaignId" -> ISO timestamp
+  notifiedAlertIds: string[]; // cảnh báo đã gửi (chống gửi trùng)
 }
 
 function createStore(): Store {
@@ -308,6 +309,7 @@ function createStore(): Store {
     settings: { enabled: false, intervalMinutes: 5 },
     log: [],
     cooldowns: {},
+    notifiedAlertIds: [],
   };
 }
 
