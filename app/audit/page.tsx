@@ -10,9 +10,16 @@ const STATUS_META: Record<
   CheckStatus,
   { icon: typeof CheckCircle2; color: string; ring: string; label: string }
 > = {
-  pass: { icon: CheckCircle2, color: "text-emerald-600", ring: "bg-emerald-50", label: "Pass" },
-  warn: { icon: AlertTriangle, color: "text-amber-600", ring: "bg-amber-50", label: "Warning" },
-  fail: { icon: XCircle, color: "text-rose-600", ring: "bg-rose-50", label: "Fail" },
+  pass: { icon: CheckCircle2, color: "text-emerald-600", ring: "bg-emerald-50", label: "Đạt" },
+  warn: { icon: AlertTriangle, color: "text-amber-600", ring: "bg-amber-50", label: "Cảnh báo" },
+  fail: { icon: XCircle, color: "text-rose-600", ring: "bg-rose-50", label: "Lỗi" },
+};
+
+const CATEGORY_VI: Record<AuditCheck["category"], string> = {
+  profitability: "Lợi nhuận",
+  efficiency: "Hiệu quả",
+  structure: "Cấu trúc",
+  scaling: "Tăng tốc",
 };
 
 function scoreColor(score: number) {
@@ -35,13 +42,13 @@ function CheckRow({ check }: { check: AuditCheck }) {
         <div className="flex items-center gap-2">
           <p className="font-medium text-slate-900">{check.title}</p>
           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-            {check.category}
+            {CATEGORY_VI[check.category]}
           </span>
         </div>
         <p className="mt-0.5 text-sm text-slate-600">{check.detail}</p>
         {check.recommendation ? (
           <p className="mt-1.5 rounded-lg bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
-            <span className="font-medium text-slate-900">Fix: </span>
+            <span className="font-medium text-slate-900">Khắc phục: </span>
             {check.recommendation}
           </p>
         ) : null}
@@ -61,8 +68,8 @@ export default async function AuditPage() {
   return (
     <>
       <TopBar
-        title="Account Audit"
-        subtitle="An automated health check of your ad account"
+        title="Đánh giá tài khoản"
+        subtitle="Kiểm tra sức khỏe tài khoản quảng cáo tự động"
       />
       <div className="space-y-6 p-6">
         <div className="card flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center">
@@ -82,7 +89,7 @@ export default async function AuditPage() {
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center gap-2 sm:justify-start">
               <h2 className="text-xl font-semibold text-slate-900">
-                Health grade
+                Điểm sức khỏe
               </h2>
               <span
                 className="rounded-md px-2 py-0.5 text-lg font-bold text-white"
@@ -92,18 +99,18 @@ export default async function AuditPage() {
               </span>
             </div>
             <p className="mt-1 text-sm text-slate-500">
-              Based on {audit.checks.length} automated checks across
-              profitability, efficiency, structure and scaling.
+              Dựa trên {audit.checks.length} kiểm tra tự động về lợi nhuận, hiệu
+              quả, cấu trúc và khả năng tăng tốc.
             </p>
             <div className="mt-3 flex items-center justify-center gap-4 text-sm sm:justify-start">
               <span className="flex items-center gap-1.5 text-emerald-600">
-                <CheckCircle2 className="h-4 w-4" /> {audit.counts.pass} passed
+                <CheckCircle2 className="h-4 w-4" /> {audit.counts.pass} đạt
               </span>
               <span className="flex items-center gap-1.5 text-amber-600">
-                <AlertTriangle className="h-4 w-4" /> {audit.counts.warn} warnings
+                <AlertTriangle className="h-4 w-4" /> {audit.counts.warn} cảnh báo
               </span>
               <span className="flex items-center gap-1.5 text-rose-600">
-                <XCircle className="h-4 w-4" /> {audit.counts.fail} failed
+                <XCircle className="h-4 w-4" /> {audit.counts.fail} lỗi
               </span>
             </div>
           </div>

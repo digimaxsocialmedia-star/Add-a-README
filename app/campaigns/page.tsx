@@ -12,11 +12,11 @@ export default async function CampaignsPage() {
   return (
     <>
       <TopBar
-        title="Campaigns"
-        subtitle={`${campaigns.length} campaigns in this ad account`}
+        title="Chiến dịch"
+        subtitle={`${campaigns.length} chiến dịch trong tài khoản quảng cáo này`}
         action={
           <Link href="/create" className="btn-primary">
-            + New campaign
+            + Chiến dịch mới
           </Link>
         }
       />

@@ -96,8 +96,8 @@ export default function AutomationPage() {
   return (
     <>
       <TopBar
-        title="Automation"
-        subtitle="Rules that watch performance and act automatically"
+        title="Tự động hóa"
+        subtitle="Các quy tắc theo dõi hiệu suất và hành động tự động"
         action={
           <button
             className="btn-primary"
@@ -109,7 +109,7 @@ export default function AutomationPage() {
             ) : (
               <Play className="h-4 w-4" />
             )}
-            Run rules now
+            Chạy quy tắc ngay
           </button>
         }
       />
@@ -117,21 +117,20 @@ export default function AutomationPage() {
       <div className="space-y-6 p-6">
         {loading ? (
           <div className="flex items-center gap-2 text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading rules…
+            <Loader2 className="h-4 w-4 animate-spin" /> Đang tải quy tắc…
           </div>
         ) : (
           <>
             {appliedMsg ? (
               <div className="card border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                 <p className="font-medium">
-                  Applied {appliedMsg.length} action
-                  {appliedMsg.length === 1 ? "" : "s"}:
+                  Đã áp dụng {appliedMsg.length} hành động:
                 </p>
                 <ul className="mt-1 list-inside list-disc space-y-0.5">
                   {appliedMsg.length ? (
                     appliedMsg.map((m, i) => <li key={i}>{m}</li>)
                   ) : (
-                    <li>Nothing matched — your account is within thresholds.</li>
+                    <li>Không có gì khớp — tài khoản của bạn đang trong ngưỡng.</li>
                   )}
                 </ul>
               </div>
@@ -142,7 +141,7 @@ export default function AutomationPage() {
               <div className="mb-3 flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-500" />
                 <h2 className="text-base font-semibold text-slate-900">
-                  Pending actions ({data?.evaluations.length ?? 0})
+                  Hành động đang chờ ({data?.evaluations.length ?? 0})
                 </h2>
               </div>
               {data?.evaluations.length ? (
@@ -158,7 +157,7 @@ export default function AutomationPage() {
                       <div>
                         <p className="text-sm text-slate-800">{e.message}</p>
                         <p className="text-xs text-slate-400">
-                          Triggered by rule: {e.ruleName}
+                          Kích hoạt bởi quy tắc: {e.ruleName}
                         </p>
                       </div>
                     </div>
@@ -166,7 +165,7 @@ export default function AutomationPage() {
                 </div>
               ) : (
                 <div className="card p-6 text-center text-sm text-slate-400">
-                  No rules are triggering right now.
+                  Hiện chưa có quy tắc nào được kích hoạt.
                 </div>
               )}
             </div>
@@ -174,12 +173,12 @@ export default function AutomationPage() {
             {/* Rules */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-900">Rules</h2>
+                <h2 className="text-base font-semibold text-slate-900">Quy tắc</h2>
                 <button
                   className="btn-ghost"
                   onClick={() => setShowForm((s) => !s)}
                 >
-                  <Plus className="h-4 w-4" /> New rule
+                  <Plus className="h-4 w-4" /> Quy tắc mới
                 </button>
               </div>
 
@@ -187,10 +186,10 @@ export default function AutomationPage() {
                 <div className="card mb-3 p-4">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <label className="label">Rule name</label>
+                      <label className="label">Tên quy tắc</label>
                       <input
                         className="input"
-                        placeholder="e.g. Pause weak prospecting"
+                        placeholder="vd: Tạm dừng tìm khách mới yếu"
                         value={draft.name}
                         onChange={(e) =>
                           setDraft({ ...draft, name: e.target.value })
@@ -198,7 +197,7 @@ export default function AutomationPage() {
                       />
                     </div>
                     <div>
-                      <label className="label">When</label>
+                      <label className="label">Khi</label>
                       <select
                         className="input"
                         value={draft.metric}
@@ -218,7 +217,7 @@ export default function AutomationPage() {
                     </div>
                     <div className="flex gap-2">
                       <div className="w-28">
-                        <label className="label">Is</label>
+                        <label className="label">Ở mức</label>
                         <select
                           className="input"
                           value={draft.operator}
@@ -229,12 +228,12 @@ export default function AutomationPage() {
                             })
                           }
                         >
-                          <option value="lt">below</option>
-                          <option value="gt">above</option>
+                          <option value="lt">dưới</option>
+                          <option value="gt">trên</option>
                         </select>
                       </div>
                       <div className="flex-1">
-                        <label className="label">Value</label>
+                        <label className="label">Giá trị</label>
                         <input
                           type="number"
                           className="input"
@@ -249,7 +248,7 @@ export default function AutomationPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="label">Then</label>
+                      <label className="label">Thì</label>
                       <select
                         className="input"
                         value={draft.action}
@@ -269,7 +268,7 @@ export default function AutomationPage() {
                     </div>
                     {needsPct ? (
                       <div>
-                        <label className="label">Adjust by (%)</label>
+                        <label className="label">Điều chỉnh (%)</label>
                         <input
                           type="number"
                           className="input"
@@ -289,10 +288,10 @@ export default function AutomationPage() {
                       className="btn-ghost"
                       onClick={() => setShowForm(false)}
                     >
-                      Cancel
+                      Hủy
                     </button>
                     <button className="btn-primary" onClick={addRule}>
-                      Add rule
+                      Thêm quy tắc
                     </button>
                   </div>
                 </div>
@@ -307,9 +306,9 @@ export default function AutomationPage() {
                     <div>
                       <p className="font-medium text-slate-900">{r.name}</p>
                       <p className="text-sm text-slate-500">
-                        If {METRIC_LABELS[r.metric]} is{" "}
-                        {r.operator === "lt" ? "below" : "above"} {r.threshold}{" "}
-                        → {ACTION_LABELS[r.action]}
+                        Nếu {METRIC_LABELS[r.metric]}{" "}
+                        {r.operator === "lt" ? "dưới" : "trên"}{" "}
+                        {r.threshold.toLocaleString("vi-VN")} → {ACTION_LABELS[r.action]}
                         {r.adjustPct ? ` ${r.adjustPct}%` : ""}
                       </p>
                     </div>
@@ -318,7 +317,7 @@ export default function AutomationPage() {
                       className={`relative h-6 w-11 rounded-full transition ${
                         r.enabled ? "bg-brand-600" : "bg-slate-300"
                       }`}
-                      aria-label="Toggle rule"
+                      aria-label="Bật/tắt quy tắc"
                     >
                       <span
                         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${

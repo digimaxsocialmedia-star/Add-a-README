@@ -24,11 +24,11 @@ export default async function DashboardPage() {
   return (
     <>
       <TopBar
-        title="Dashboard"
-        subtitle={`${summary.activeCampaigns} active of ${summary.totalCampaigns} campaigns · last 30 days`}
+        title="Tổng quan"
+        subtitle={`${summary.activeCampaigns}/${summary.totalCampaigns} chiến dịch đang chạy · 30 ngày gần nhất`}
         action={
           <Link href="/create" className="btn-primary">
-            + New campaign
+            + Chiến dịch mới
           </Link>
         }
       />
@@ -36,30 +36,30 @@ export default async function DashboardPage() {
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total spend"
+            label="Tổng chi tiêu"
             value={money(m.spend)}
-            sub={`${pct(m.ctr)} CTR · ${money(m.cpc)} CPC`}
+            sub={`CTR ${pct(m.ctr)} · CPC ${money(m.cpc)}`}
             icon={DollarSign}
             accent="brand"
           />
           <StatCard
-            label="Revenue"
+            label="Doanh thu"
             value={money(m.revenue)}
-            sub={`${intNum(m.conversions)} conversions`}
+            sub={`${intNum(m.conversions)} chuyển đổi`}
             icon={TrendingUp}
             accent="emerald"
           />
           <StatCard
             label="ROAS"
             value={roasFmt(m.roas)}
-            sub={m.roas >= 1 ? "Profitable overall" : "Below breakeven"}
+            sub={m.roas >= 1 ? "Có lãi tổng thể" : "Dưới điểm hòa vốn"}
             icon={Target}
             accent={m.roas >= 1 ? "emerald" : "rose"}
           />
           <StatCard
-            label="Clicks"
+            label="Lượt nhấp"
             value={intNum(m.clicks)}
-            sub={`${intNum(m.impressions)} impressions`}
+            sub={`${intNum(m.impressions)} lượt hiển thị`}
             icon={MousePointerClick}
             accent="sky"
           />
@@ -68,14 +68,14 @@ export default async function DashboardPage() {
         <div className="card p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-900">
-              Spend, revenue & ROAS
+              Chi tiêu, doanh thu & ROAS
             </h2>
             <div className="flex items-center gap-4 text-xs text-slate-500">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-brand-500" /> Spend
+                <span className="h-2 w-2 rounded-full bg-brand-500" /> Chi tiêu
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Revenue
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Doanh thu
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-amber-500" /> ROAS
@@ -88,13 +88,13 @@ export default async function DashboardPage() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-900">
-              Top campaigns by ROAS
+              Chiến dịch ROAS cao nhất
             </h2>
             <Link
               href="/campaigns"
               className="text-sm font-medium text-brand-600 hover:text-brand-700"
             >
-              View all →
+              Xem tất cả →
             </Link>
           </div>
           <CampaignTable campaigns={top} />

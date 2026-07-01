@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Dữ liệu JSON không hợp lệ" }, { status: 400 });
   }
 
   const name = (body.name ?? "").toString().trim();
@@ -31,14 +31,14 @@ export async function POST(req: Request) {
   const objective = body.objective as Objective;
 
   if (!name) {
-    return NextResponse.json({ error: "Campaign name is required" }, { status: 400 });
+    return NextResponse.json({ error: "Vui lòng nhập tên chiến dịch" }, { status: 400 });
   }
   if (!OBJECTIVES.includes(objective)) {
-    return NextResponse.json({ error: "Invalid objective" }, { status: 400 });
+    return NextResponse.json({ error: "Mục tiêu không hợp lệ" }, { status: 400 });
   }
   if (!Number.isFinite(dailyBudget) || dailyBudget <= 0) {
     return NextResponse.json(
-      { error: "Daily budget must be a positive number" },
+      { error: "Ngân sách hằng ngày phải là số dương" },
       { status: 400 },
     );
   }
@@ -47,10 +47,10 @@ export async function POST(req: Request) {
     name,
     objective,
     dailyBudget,
-    audience: (body.audience ?? "Broad").toString().trim() || "Broad",
-    headline: (body.headline ?? "").toString().trim() || "New offer",
+    audience: (body.audience ?? "Rộng").toString().trim() || "Rộng",
+    headline: (body.headline ?? "").toString().trim() || "Ưu đãi mới",
     primaryText:
-      (body.primaryText ?? "").toString().trim() || "Check out what's new.",
+      (body.primaryText ?? "").toString().trim() || "Khám phá điều mới.",
     creativeType:
       body.creativeType === "VIDEO" || body.creativeType === "CAROUSEL"
         ? body.creativeType

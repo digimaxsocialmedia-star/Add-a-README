@@ -12,7 +12,7 @@ const FORMAT_META: Record<
   CreativeType,
   { label: string; icon: typeof ImageIcon }
 > = {
-  IMAGE: { label: "Image", icon: ImageIcon },
+  IMAGE: { label: "Hình ảnh", icon: ImageIcon },
   VIDEO: { label: "Video", icon: Video },
   CAROUSEL: { label: "Carousel", icon: LayoutGrid },
 };
@@ -40,12 +40,12 @@ function AdsTable({ ads, title, icon: Icon }: { ads: AdRow[]; title: string; ico
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-4 py-3 font-medium">Ad</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Spend</th>
+                <th className="px-4 py-3 font-medium">Quảng cáo</th>
+                <th className="px-4 py-3 font-medium">Trạng thái</th>
+                <th className="px-4 py-3 text-right font-medium">Chi tiêu</th>
                 <th className="px-4 py-3 text-right font-medium">ROAS</th>
                 <th className="px-4 py-3 text-right font-medium">CTR</th>
-                <th className="px-4 py-3 text-right font-medium">Conv.</th>
+                <th className="px-4 py-3 text-right font-medium">Chuyển đổi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -99,8 +99,8 @@ export default async function CreativesPage() {
   return (
     <>
       <TopBar
-        title="Creative Studio"
-        subtitle={`${ads.length} ads · performance by creative + AI copywriting`}
+        title="Xưởng nội dung"
+        subtitle={`${ads.length} quảng cáo · hiệu suất theo nội dung + viết quảng cáo bằng AI`}
       />
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -116,14 +116,14 @@ export default async function CreativesPage() {
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">{meta.label}</p>
-                      <p className="text-xs text-slate-400">{count} ads</p>
+                      <p className="text-xs text-slate-400">{count} quảng cáo</p>
                     </div>
                   </div>
                   <RoasBadge roas={metrics.roas} />
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs text-slate-400">Spend</p>
+                    <p className="text-xs text-slate-400">Chi tiêu</p>
                     <p className="font-medium text-slate-800">{money(metrics.spend)}</p>
                   </div>
                   <div>
@@ -136,9 +136,11 @@ export default async function CreativesPage() {
           })}
         </div>
 
-        {top.length ? <AdsTable ads={top} title="Top performing ads" icon={TrendingUp} /> : null}
+        {top.length ? (
+          <AdsTable ads={top} title="Quảng cáo hiệu quả nhất" icon={TrendingUp} />
+        ) : null}
         {bottom.length ? (
-          <AdsTable ads={bottom} title="Underperforming ads" icon={TrendingDown} />
+          <AdsTable ads={bottom} title="Quảng cáo kém hiệu quả" icon={TrendingDown} />
         ) : null}
 
         <AdCopyGenerator />

@@ -5,19 +5,19 @@ import { Loader2, Sparkles, Copy, Check } from "lucide-react";
 import type { AdCopyResult } from "@/lib/types";
 
 const TONES = [
-  "friendly and confident",
-  "bold and punchy",
-  "premium and elegant",
-  "playful and witty",
-  "urgent and direct",
+  "thân thiện và tự tin",
+  "mạnh mẽ và súc tích",
+  "cao cấp và tinh tế",
+  "vui tươi và dí dỏm",
+  "khẩn trương và trực diện",
 ];
 
 const OBJECTIVES = [
-  "Sales / Conversions",
-  "Traffic",
-  "Lead generation",
-  "Awareness",
-  "Engagement",
+  "Doanh số / Chuyển đổi",
+  "Lưu lượng truy cập",
+  "Khách hàng tiềm năng",
+  "Nhận diện thương hiệu",
+  "Tương tác",
 ];
 
 export function AdCopyGenerator() {
@@ -44,7 +44,7 @@ export function AdCopyGenerator() {
       setResult({
         variants: [],
         source: "heuristic",
-        note: "Could not reach the server. Please try again.",
+        note: "Không kết nối được máy chủ. Vui lòng thử lại.",
       });
     } finally {
       setLoading(false);
@@ -62,31 +62,31 @@ export function AdCopyGenerator() {
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-brand-600" />
         <h2 className="text-base font-semibold text-slate-900">
-          AI ad copy generator
+          Trình tạo nội dung quảng cáo AI
         </h2>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="label">Product / offer</label>
+          <label className="label">Sản phẩm / ưu đãi</label>
           <input
             className="input"
-            placeholder="e.g. organic cold-brew coffee subscription"
+            placeholder="vd: gói cà phê cold-brew hữu cơ giao hàng tháng"
             value={form.product}
             onChange={(e) => setForm({ ...form, product: e.target.value })}
           />
         </div>
         <div>
-          <label className="label">Audience</label>
+          <label className="label">Đối tượng</label>
           <input
             className="input"
-            placeholder="e.g. busy professionals 25-40"
+            placeholder="vd: dân văn phòng bận rộn 25-40 tuổi"
             value={form.audience}
             onChange={(e) => setForm({ ...form, audience: e.target.value })}
           />
         </div>
         <div>
-          <label className="label">Tone</label>
+          <label className="label">Giọng điệu</label>
           <select
             className="input"
             value={form.tone}
@@ -100,7 +100,7 @@ export function AdCopyGenerator() {
           </select>
         </div>
         <div>
-          <label className="label">Objective</label>
+          <label className="label">Mục tiêu</label>
           <select
             className="input"
             value={form.objective}
@@ -121,11 +121,11 @@ export function AdCopyGenerator() {
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Writing…
+                <Loader2 className="h-4 w-4 animate-spin" /> Đang viết…
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" /> Generate copy
+                <Sparkles className="h-4 w-4" /> Tạo nội dung
               </>
             )}
           </button>
@@ -141,8 +141,8 @@ export function AdCopyGenerator() {
           ) : (
             <p className="text-xs text-slate-400">
               {result.source === "claude"
-                ? `Written by ${result.model ?? "Claude"}`
-                : "Templated variants"}
+                ? `Viết bởi ${result.model ?? "Claude"}`
+                : "Mẫu có sẵn"}
             </p>
           )}
           {result.variants.map((v, i) => (
@@ -157,11 +157,11 @@ export function AdCopyGenerator() {
                 >
                   {copied === i ? (
                     <>
-                      <Check className="h-3.5 w-3.5" /> Copied
+                      <Check className="h-3.5 w-3.5" /> Đã chép
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3.5 w-3.5" /> Copy
+                      <Copy className="h-3.5 w-3.5" /> Chép
                     </>
                   )}
                 </button>

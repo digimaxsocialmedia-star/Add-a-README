@@ -1,11 +1,14 @@
 import { money, pct, roasFmt } from "../format";
 import type { Alert, CampaignWithMetrics, SeriesPoint } from "../types";
 
+// Ngưỡng chi tiêu (VND) để coi là "đáng kể" cho cảnh báo không có chuyển đổi.
+const MIN_SPEND = 1_200_000;
+
 function mean(xs: number[]): number {
   return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
 }
 
-/** Detect anomalies from the account daily series + campaign totals. */
+/** Phát hiện bất thường từ chuỗi ngày của tài khoản + số liệu tổng từng chiến dịch. */
 export function detectAlerts(
   series: SeriesPoint[],
   campaigns: CampaignWithMetrics[],
@@ -22,19 +25,19 @@ export function detectAlerts(
       alerts.push({
         id: "spend_spike",
         severity: "high",
-        title: "Spend spike detected",
-        detail: `Yesterday's spend (${money(last.spend)}) is ${(
+        title: "Phát hiện tăng vọt chi tiêu",
+        detail: `Chi tiêu hôm qua (${money(last.spend)}) gấp ${(
           last.spend / avgSpend
-        ).toFixed(1)}x the prior 7-day average (${money(avgSpend)}).`,
+        ).toFixed(1)} lần mức trung bình 7 ngày trước (${money(avgSpend)}).`,
       });
     } else if (avgSpend > 0 && last.spend < avgSpend * 0.5) {
       alerts.push({
         id: "spend_drop",
         severity: "medium",
-        title: "Spend dropped sharply",
-        detail: `Yesterday's spend (${money(last.spend)}) is well below the prior 7-day average (${money(
+        title: "Chi tiêu giảm mạnh",
+        detail: `Chi tiêu hôm qua (${money(last.spend)}) thấp hơn hẳn mức trung bình 7 ngày trước (${money(
           avgSpend,
-        )}) — check for delivery or budget issues.`,
+        )}) — kiểm tra phân phối hoặc ngân sách.`,
       });
     }
   }
@@ -48,10 +51,10 @@ export function detectAlerts(
       alerts.push({
         id: "roas_drop",
         severity: "high",
-        title: "ROAS is trending down",
-        detail: `3-day ROAS (${roasFmt(recentRoas)}) is down from ${roasFmt(
+        title: "ROAS đang đi xuống",
+        detail: `ROAS 3 ngày gần nhất (${roasFmt(recentRoas)}) giảm từ ${roasFmt(
           prevRoas,
-        )} over the prior week — efficiency is slipping.`,
+        )} của tuần trước — hiệu quả đang sụt giảm.`,
       });
     }
 
@@ -61,27 +64,31 @@ export function detectAlerts(
       alerts.push({
         id: "ctr_drop",
         severity: "medium",
-        title: "CTR is declining",
-        detail: `3-day CTR (${pct(recentCtr)}) has fallen from ${pct(
+        title: "CTR đang giảm",
+        detail: `CTR 3 ngày gần nhất (${pct(recentCtr)}) đã giảm từ ${pct(
           prevCtr,
-        )} — creative fatigue is likely.`,
+        )} — nhiều khả năng nội dung đã "chai".`,
       });
     }
   }
 
-  // Spending with no conversions.
+  // Có chi tiêu nhưng không có chuyển đổi.
   for (const c of campaigns) {
-    if (c.status === "ACTIVE" && c.metrics.spend > 50 && c.metrics.conversions === 0) {
+    if (
+      c.status === "ACTIVE" &&
+      c.metrics.spend > MIN_SPEND &&
+      c.metrics.conversions === 0
+    ) {
       alerts.push({
         id: `no_conv_${c.id}`,
         severity: "high",
-        title: `No conversions on "${c.name}"`,
-        detail: `${money(c.metrics.spend)} spent with zero conversions — pause or fix tracking/targeting.`,
+        title: `"${c.name}" không có chuyển đổi`,
+        detail: `Đã chi ${money(c.metrics.spend)} mà không có chuyển đổi nào — hãy tạm dừng hoặc sửa theo dõi/nhắm chọn.`,
       });
     }
   }
 
-  // Account losing money.
+  // Tài khoản dưới hòa vốn.
   const active = campaigns.filter((c) => c.status === "ACTIVE" && c.metrics.spend > 0);
   const spend = active.reduce((a, c) => a + c.metrics.spend, 0);
   const revenue = active.reduce((a, c) => a + c.metrics.revenue, 0);
@@ -89,8 +96,10 @@ export function detectAlerts(
     alerts.push({
       id: "account_unprofitable",
       severity: "high",
-      title: "Account is below breakeven",
-      detail: `Active campaigns returned ${roasFmt(revenue / spend)} ROAS — you're spending more than you earn.`,
+      title: "Tài khoản dưới điểm hòa vốn",
+      detail: `Các chiến dịch đang chạy chỉ đạt ROAS ${roasFmt(
+        revenue / spend,
+      )} — bạn đang chi nhiều hơn doanh thu thu về.`,
     });
   }
 

@@ -11,15 +11,9 @@ import {
   YAxis,
 } from "recharts";
 import type { SeriesPoint } from "@/lib/types";
-import { money0, roasFmt } from "@/lib/format";
+import { money, moneyCompact, roasFmt, fmtDate } from "@/lib/format";
 
 export function PerformanceChart({ data }: { data: SeriesPoint[] }) {
-  const fmtDate = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -45,11 +39,11 @@ export function PerformanceChart({ data }: { data: SeriesPoint[] }) {
           />
           <YAxis
             yAxisId="left"
-            tickFormatter={(v) => money0(v as number)}
+            tickFormatter={(v) => moneyCompact(v as number)}
             tick={{ fontSize: 12, fill: "#94a3b8" }}
             axisLine={false}
             tickLine={false}
-            width={56}
+            width={64}
           />
           <YAxis
             yAxisId="right"
@@ -63,7 +57,7 @@ export function PerformanceChart({ data }: { data: SeriesPoint[] }) {
           <Tooltip
             formatter={(value: number | string, name: string) => {
               if (name === "ROAS") return [roasFmt(Number(value)), name];
-              return [money0(Number(value)), name];
+              return [money(Number(value)), name];
             }}
             labelFormatter={(l) => fmtDate(String(l))}
             contentStyle={{
@@ -76,7 +70,7 @@ export function PerformanceChart({ data }: { data: SeriesPoint[] }) {
             yAxisId="left"
             type="monotone"
             dataKey="spend"
-            name="Spend"
+            name="Chi tiêu"
             stroke="#6366f1"
             strokeWidth={2}
             fill="url(#spendFill)"
@@ -85,7 +79,7 @@ export function PerformanceChart({ data }: { data: SeriesPoint[] }) {
             yAxisId="left"
             type="monotone"
             dataKey="revenue"
-            name="Revenue"
+            name="Doanh thu"
             stroke="#10b981"
             strokeWidth={2}
             fill="url(#revFill)"

@@ -11,11 +11,11 @@ export type Objective =
 export type EntityStatus = "ACTIVE" | "PAUSED";
 
 export const OBJECTIVE_LABELS: Record<Objective, string> = {
-  OUTCOME_SALES: "Sales / Conversions",
-  OUTCOME_TRAFFIC: "Traffic",
-  OUTCOME_LEADS: "Lead generation",
-  OUTCOME_AWARENESS: "Awareness",
-  OUTCOME_ENGAGEMENT: "Engagement",
+  OUTCOME_SALES: "Doanh số / Chuyển đổi",
+  OUTCOME_TRAFFIC: "Lưu lượng truy cập",
+  OUTCOME_LEADS: "Khách hàng tiềm năng",
+  OUTCOME_AWARENESS: "Nhận diện thương hiệu",
+  OUTCOME_ENGAGEMENT: "Tương tác",
 };
 
 export interface Metrics {
@@ -113,17 +113,17 @@ export type RuleAction =
 
 export const METRIC_LABELS: Record<RuleMetric, string> = {
   roas: "ROAS",
-  cpa: "CPA ($)",
+  cpa: "CPA (đ)",
   ctr: "CTR (%)",
-  cpc: "CPC ($)",
-  spend: "Spend ($)",
+  cpc: "CPC (đ)",
+  spend: "Chi tiêu (đ)",
 };
 
 export const ACTION_LABELS: Record<RuleAction, string> = {
-  PAUSE: "Pause campaign",
-  INCREASE_BUDGET: "Increase budget",
-  DECREASE_BUDGET: "Decrease budget",
-  NOTIFY: "Send alert only",
+  PAUSE: "Tạm dừng chiến dịch",
+  INCREASE_BUDGET: "Tăng ngân sách",
+  DECREASE_BUDGET: "Giảm ngân sách",
+  NOTIFY: "Chỉ gửi cảnh báo",
 };
 
 export interface AutomationRule {

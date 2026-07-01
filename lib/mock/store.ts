@@ -45,85 +45,86 @@ interface Profile {
   spikeLastDay?: boolean; // inject a recent spend anomaly (for the Alerts demo)
 }
 
+// Ngân sách / CPM / AOV theo VND (đồng).
 const PROFILES: Profile[] = [
   {
-    name: "Summer Sale — Retargeting",
+    name: "Khuyến mãi hè — Tiếp thị lại",
     objective: "OUTCOME_SALES",
-    dailyBudget: 120,
+    dailyBudget: 3_000_000,
     status: "ACTIVE",
-    cpm: 9,
+    cpm: 225_000,
     ctr: 2.6,
     cvr: 2.1,
-    aov: 68,
+    aov: 1_700_000,
     trendPerDay: 0.004,
     seed: 101,
-    audiences: ["Website visitors 30d", "Add-to-cart 14d"],
+    audiences: ["Khách ghé thăm web 30 ngày", "Đã thêm vào giỏ 14 ngày"],
   },
   {
-    name: "Prospecting — Lookalike 1%",
+    name: "Tìm khách mới — Lookalike 1%",
     objective: "OUTCOME_SALES",
-    dailyBudget: 200,
+    dailyBudget: 5_000_000,
     status: "ACTIVE",
-    cpm: 13,
+    cpm: 325_000,
     ctr: 1.2,
     cvr: 2.4,
-    aov: 72,
+    aov: 1_800_000,
     trendPerDay: 0.002,
     seed: 202,
-    audiences: ["LLA 1% purchasers", "LLA 2% purchasers"],
+    audiences: ["Lookalike 1% người mua", "Lookalike 2% người mua"],
     spikeLastDay: true,
   },
   {
-    name: "Brand Awareness — Video",
+    name: "Nhận diện thương hiệu — Video",
     objective: "OUTCOME_AWARENESS",
-    dailyBudget: 80,
+    dailyBudget: 2_000_000,
     status: "ACTIVE",
-    cpm: 6,
+    cpm: 150_000,
     ctr: 0.8,
     cvr: 0.8,
-    aov: 55,
+    aov: 1_375_000,
     trendPerDay: -0.002,
     seed: 303,
-    audiences: ["Broad 18-45", "Interest: outdoors"],
+    audiences: ["Rộng 18-45", "Sở thích: ngoài trời"],
   },
   {
-    name: "Lead Gen — Newsletter",
+    name: "Khách tiềm năng — Bản tin",
     objective: "OUTCOME_LEADS",
-    dailyBudget: 60,
+    dailyBudget: 1_500_000,
     status: "ACTIVE",
-    cpm: 8,
+    cpm: 200_000,
     ctr: 1.7,
     cvr: 7.0,
-    aov: 9,
+    aov: 225_000,
     trendPerDay: 0.001,
     seed: 404,
-    audiences: ["Interest: marketing", "Engaged shoppers"],
+    audiences: ["Sở thích: marketing", "Người hay mua sắm"],
   },
   {
-    name: "Catalog — Dynamic Product Ads",
+    name: "Catalog — Quảng cáo sản phẩm động",
     objective: "OUTCOME_SALES",
-    dailyBudget: 150,
+    dailyBudget: 3_750_000,
     status: "ACTIVE",
-    cpm: 11,
+    cpm: 275_000,
     ctr: 1.9,
     cvr: 2.8,
-    aov: 64,
-    trendPerDay: -0.01, // declining — good candidate for the AI to flag
+    aov: 1_600_000,
+    trendPerDay: -0.01, // đang đi xuống — để AI gắn cờ
     seed: 505,
-    audiences: ["Viewed product 7d", "Broad catalog"],
+    audiences: ["Đã xem sản phẩm 7 ngày", "Catalog rộng"],
   },
   {
-    name: "Traffic — Blog Promo",
+    name: "Lưu lượng — Quảng bá blog",
     objective: "OUTCOME_TRAFFIC",
-    dailyBudget: 40,
+    dailyBudget: 1_000_000,
     status: "PAUSED",
-    cpm: 5,
+    cpm: 125_000,
     ctr: 1.5,
     cvr: 1.0,
-    aov: 30,
+    aov: 750_000,
     trendPerDay: 0,
     seed: 606,
-    audiences: ["Interest: SaaS", "Lookalike readers"],
+    audiences: ["Sở thích: SaaS", "Lookalike người đọc"],
   },
 ];
 
@@ -192,11 +193,17 @@ function splitMetrics(total: Metrics, weights: number[]): Metrics[] {
   });
 }
 
+const CREATIVE_TYPE_VI: Record<Ad["creativeType"], string> = {
+  IMAGE: "hình ảnh",
+  VIDEO: "video",
+  CAROUSEL: "carousel",
+};
+
 const CREATIVES: Array<{ type: Ad["creativeType"]; headline: string; text: string }> = [
-  { type: "IMAGE", headline: "Up to 40% off — today only", text: "Grab the styles everyone's talking about before they're gone." },
-  { type: "VIDEO", headline: "See it in action", text: "30 seconds to understand why customers keep coming back." },
-  { type: "CAROUSEL", headline: "Best sellers, ranked", text: "Swipe through this month's most-loved picks." },
-  { type: "IMAGE", headline: "Free shipping over $50", text: "Treat yourself. We'll cover the delivery." },
+  { type: "IMAGE", headline: "Giảm đến 40% — chỉ hôm nay", text: "Sở hữu ngay những mẫu đang hot trước khi hết hàng." },
+  { type: "VIDEO", headline: "Xem sản phẩm hoạt động", text: "30 giây để hiểu vì sao khách hàng luôn quay lại." },
+  { type: "CAROUSEL", headline: "Bán chạy nhất, xếp hạng", text: "Lướt xem những lựa chọn được yêu thích nhất tháng này." },
+  { type: "IMAGE", headline: "Miễn phí vận chuyển từ 500.000đ", text: "Tự thưởng cho mình. Chúng tôi lo phần giao hàng." },
 ];
 
 function buildCampaign(p: Profile, index: number): Campaign {
@@ -211,7 +218,7 @@ function buildCampaign(p: Profile, index: number): Campaign {
       const c = CREATIVES[(index + asIdx + adIdx) % CREATIVES.length];
       return {
         id: `ad_${index + 1}_${asIdx + 1}_${adIdx + 1}`,
-        name: `${c.type[0]}${c.type.slice(1).toLowerCase()} ad ${adIdx + 1}`,
+        name: `Quảng cáo ${CREATIVE_TYPE_VI[c.type]} ${adIdx + 1}`,
         status: "ACTIVE",
         creativeType: c.type,
         headline: c.headline,
@@ -244,7 +251,7 @@ function buildCampaign(p: Profile, index: number): Campaign {
 const DEFAULT_RULES: AutomationRule[] = [
   {
     id: "rule_1",
-    name: "Pause unprofitable campaigns",
+    name: "Tạm dừng chiến dịch thua lỗ",
     enabled: true,
     metric: "roas",
     operator: "lt",
@@ -253,7 +260,7 @@ const DEFAULT_RULES: AutomationRule[] = [
   },
   {
     id: "rule_2",
-    name: "Scale winners",
+    name: "Tăng tốc chiến dịch hiệu quả",
     enabled: true,
     metric: "roas",
     operator: "gt",
@@ -263,17 +270,17 @@ const DEFAULT_RULES: AutomationRule[] = [
   },
   {
     id: "rule_3",
-    name: "Rein in expensive conversions",
+    name: "Kiểm soát chi phí chuyển đổi cao",
     enabled: true,
     metric: "cpa",
     operator: "gt",
-    threshold: 45,
+    threshold: 1_200_000,
     action: "DECREASE_BUDGET",
     adjustPct: 15,
   },
   {
     id: "rule_4",
-    name: "Alert on low CTR",
+    name: "Cảnh báo CTR thấp",
     enabled: false,
     metric: "ctr",
     operator: "lt",

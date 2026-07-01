@@ -12,18 +12,20 @@ import type {
 // Per the project's Claude integration: use the latest Opus model.
 const MODEL = "claude-opus-4-8";
 
-const SYSTEM_PROMPT = `You are a senior Meta (Facebook) Ads strategist embedded in an ad-automation tool.
-You receive a snapshot of an ad account's campaigns with aggregated 30-day performance.
-Produce concrete, prioritized optimization recommendations a media buyer can act on today.
+const SYSTEM_PROMPT = `Bạn là chuyên gia chiến lược quảng cáo Meta (Facebook) kỳ cựu, tích hợp trong một công cụ tự động hóa quảng cáo của một nhà quảng cáo Việt Nam.
+Bạn nhận được ảnh chụp nhanh các chiến dịch của một tài khoản với hiệu suất tổng hợp 30 ngày. Tiền tệ là VND (đồng).
+Hãy đưa ra các khuyến nghị tối ưu cụ thể, có thứ tự ưu tiên mà người chạy quảng cáo có thể hành động ngay hôm nay.
 
-Guidelines:
-- Be specific and reference the campaign by name and the metric that justifies the action.
-- Prefer high-leverage moves: reallocating budget from low-ROAS to high-ROAS campaigns,
-  scaling winners gradually, fixing creative/CTR problems, tightening or broadening audiences.
-- ROAS below ~1.0 is losing money; ROAS above ~3.0 is a scaling candidate.
-- CTR below ~1.0% usually signals a creative or targeting problem.
-- Keep each rationale to 1-2 sentences. recommendedAction must be a single imperative step.
-- Return between 3 and 6 suggestions, ordered most impactful first.`;
+QUAN TRỌNG: Toàn bộ nội dung (title, rationale, recommendedAction) phải viết HOÀN TOÀN BẰNG TIẾNG VIỆT, tự nhiên và chuyên nghiệp.
+
+Hướng dẫn:
+- Nói cụ thể, dẫn tên chiến dịch và chỉ số biện minh cho hành động.
+- Ưu tiên các nước đi đòn bẩy cao: chuyển ngân sách từ chiến dịch ROAS thấp sang ROAS cao,
+  tăng tốc dần các chiến dịch thắng, sửa vấn đề nội dung/CTR, siết hoặc mở rộng đối tượng.
+- ROAS dưới ~1.0 là đang lỗ; ROAS trên ~3.0 là ứng viên để tăng tốc.
+- CTR dưới ~1.0% thường báo hiệu vấn đề về nội dung hoặc nhắm chọn.
+- Mỗi rationale 1-2 câu. recommendedAction là một bước hành động mệnh lệnh duy nhất.
+- Trả về từ 3 đến 6 gợi ý, sắp xếp theo mức tác động giảm dần.`;
 
 function buildAccountTable(campaigns: CampaignWithMetrics[]): string {
   const rows = campaigns.map((c) => {
@@ -77,15 +79,15 @@ export async function getSuggestions(
     return {
       ...heuristicSuggestions(campaigns),
       source: "heuristic",
-      note: "Set ANTHROPIC_API_KEY to generate recommendations with Claude. Showing rule-based analysis.",
+      note: "Đặt ANTHROPIC_API_KEY để tạo khuyến nghị bằng Claude. Đang hiển thị phân tích theo quy tắc.",
     };
   }
 
   try {
     const client = new Anthropic();
-    const userPrompt = `Here is the current ad account snapshot (last 30 days):\n\n${buildAccountTable(
+    const userPrompt = `Đây là ảnh chụp nhanh tài khoản quảng cáo hiện tại (30 ngày gần nhất), tiền tệ VND:\n\n${buildAccountTable(
       campaigns,
-    )}\n\nReturn prioritized optimization recommendations.`;
+    )}\n\nHãy trả về các khuyến nghị tối ưu theo thứ tự ưu tiên, viết bằng tiếng Việt.`;
 
     // Adaptive thinking + structured JSON output. Passed as `any` so the build
     // doesn't couple to a specific SDK type version for these newer fields.
@@ -118,16 +120,16 @@ export async function getSuggestions(
     return {
       ...heuristicSuggestions(campaigns),
       source: "heuristic",
-      note: `Claude call failed (${
-        err instanceof Error ? err.message : "unknown error"
-      }). Showing rule-based analysis.`,
+      note: `Gọi Claude thất bại (${
+        err instanceof Error ? err.message : "lỗi không xác định"
+      }). Đang hiển thị phân tích theo quy tắc.`,
     };
   }
 }
 
 // -----------------------------------------------------------------------------
-// Heuristic fallback — a deterministic mini "optimizer" so the feature is
-// useful even without an API key.
+// Phương án dự phòng theo quy tắc — một "bộ tối ưu" tất định để tính năng vẫn
+// hữu ích ngay cả khi không có API key.
 // -----------------------------------------------------------------------------
 export function heuristicSuggestions(
   campaigns: CampaignWithMetrics[],
@@ -141,75 +143,75 @@ export function heuristicSuggestions(
   for (const c of [...active].sort((a, b) => a.metrics.roas - b.metrics.roas)) {
     if (c.metrics.roas < 1) {
       suggestions.push({
-        title: `Stop the bleed on "${c.name}"`,
+        title: `Chặn lỗ cho "${c.name}"`,
         severity: "high",
         category: "budget",
         campaignName: c.name,
-        rationale: `ROAS is ${roasFmt(c.metrics.roas)} on ${money(
+        rationale: `ROAS chỉ ${roasFmt(c.metrics.roas)} trên ${money(
           c.metrics.spend,
-        )} spend — this campaign is losing money.`,
+        )} chi tiêu — chiến dịch này đang lỗ.`,
         recommendedAction:
-          "Pause it (or cut budget 50%) and redirect spend to your best ROAS campaign.",
+          "Tạm dừng (hoặc giảm 50% ngân sách) và dồn chi tiêu cho chiến dịch ROAS tốt nhất.",
       });
     }
   }
 
   for (const c of [...winners].sort((a, b) => b.metrics.roas - a.metrics.roas)) {
     suggestions.push({
-      title: `Scale "${c.name}"`,
+      title: `Tăng tốc "${c.name}"`,
       severity: "high",
       category: "budget",
       campaignName: c.name,
-      rationale: `ROAS is ${roasFmt(c.metrics.roas)} — well above target. There's room to spend more profitably.`,
-      recommendedAction: `Increase daily budget ~20% (to ${money(
+      rationale: `ROAS ${roasFmt(c.metrics.roas)} — cao hơn hẳn mục tiêu. Còn dư địa để chi nhiều hơn mà vẫn có lời.`,
+      recommendedAction: `Tăng ngân sách ngày ~20% (lên ${money(
         c.dailyBudget * 1.2,
-      )}) and monitor for 3 days.`,
+      )}) và theo dõi trong 3 ngày.`,
     });
   }
 
   for (const c of active) {
     if (c.metrics.ctr < 1) {
       suggestions.push({
-        title: `Refresh creative on "${c.name}"`,
+        title: `Làm mới nội dung cho "${c.name}"`,
         severity: "medium",
         category: "creative",
         campaignName: c.name,
-        rationale: `CTR is only ${pct(
+        rationale: `CTR chỉ ${pct(
           c.metrics.ctr,
-        )} — the audience isn't engaging with the current creative.`,
+        )} — đối tượng chưa tương tác với nội dung hiện tại.`,
         recommendedAction:
-          "Test 2-3 new hooks/thumbnails and pause the lowest-CTR ad in the set.",
+          "Thử 2-3 hook/thumbnail mới và tạm dừng quảng cáo có CTR thấp nhất trong nhóm.",
       });
     }
   }
 
   if (losers.length && winners.length) {
     suggestions.push({
-      title: "Reallocate budget toward what's working",
+      title: "Phân bổ lại ngân sách về nơi đang hiệu quả",
       severity: "high",
       category: "structure",
-      rationale: `${losers.length} campaign(s) are below 1.0x ROAS while ${winners.length} are above 3.0x. The account mix is leaking profit.`,
-      recommendedAction: `Shift budget from ${losers
+      rationale: `${losers.length} chiến dịch dưới 1.0x ROAS trong khi ${winners.length} chiến dịch trên 3.0x. Cơ cấu tài khoản đang rò rỉ lợi nhuận.`,
+      recommendedAction: `Chuyển ngân sách từ ${losers
         .map((c) => `"${c.name}"`)
-        .join(", ")} into ${winners.map((c) => `"${c.name}"`).join(", ")}.`,
+        .join(", ")} sang ${winners.map((c) => `"${c.name}"`).join(", ")}.`,
     });
   }
 
-  // High CPA flag.
+  // Cảnh báo CPA cao.
   const pricey = active
-    .filter((c) => c.metrics.conversions > 0 && c.metrics.cpa > 45)
+    .filter((c) => c.metrics.conversions > 0 && c.metrics.cpa > 1_200_000)
     .sort((a, b) => b.metrics.cpa - a.metrics.cpa)[0];
   if (pricey) {
     suggestions.push({
-      title: `High cost per conversion on "${pricey.name}"`,
+      title: `Chi phí chuyển đổi cao ở "${pricey.name}"`,
       severity: "medium",
       category: "bidding",
       campaignName: pricey.name,
-      rationale: `CPA is ${money(
+      rationale: `CPA là ${money(
         pricey.metrics.cpa,
-      )} — above a healthy threshold for this account.`,
+      )} — cao hơn ngưỡng lành mạnh của tài khoản này.`,
       recommendedAction:
-        "Tighten the audience or switch to a cost-cap bid strategy to control CPA.",
+        "Siết đối tượng hoặc chuyển sang chiến lược giá thầu giới hạn chi phí để kiểm soát CPA.",
     });
   }
 
@@ -219,12 +221,12 @@ export function heuristicSuggestions(
 
   if (ranked.length === 0) {
     ranked.push({
-      title: "Account is healthy — keep testing",
+      title: "Tài khoản đang khỏe mạnh — tiếp tục thử nghiệm",
       severity: "low",
       category: "creative",
-      rationale: "No campaign is currently losing money or under-performing on CTR.",
+      rationale: "Hiện không có chiến dịch nào đang lỗ hay kém về CTR.",
       recommendedAction:
-        "Keep a steady creative-testing cadence and gradually scale your top ROAS campaign.",
+        "Duy trì nhịp thử nội dung đều đặn và tăng tốc dần chiến dịch ROAS cao nhất.",
     });
   }
   return { suggestions: ranked };
@@ -271,22 +273,24 @@ export async function generateAdCopy(input: AdCopyInput): Promise<AdCopyResult> 
     return {
       ...heuristicAdCopy(input),
       source: "heuristic",
-      note: "Set ANTHROPIC_API_KEY to write copy with Claude. Showing templated variants.",
+      note: "Đặt ANTHROPIC_API_KEY để viết nội dung bằng Claude. Đang hiển thị các mẫu có sẵn.",
     };
   }
   try {
     const client = new Anthropic();
-    const system = `You are a direct-response copywriter for Meta (Facebook/Instagram) ads.
-Write scroll-stopping ad copy that drives the stated objective. For each variant use a
-distinct angle (e.g. problem/solution, social proof, urgency/scarcity, benefit-led,
-curiosity). Headlines must be under ~40 characters; primary text 1-3 short sentences with
-a clear call to action. No fabricated statistics or unverifiable claims.`;
-    const user = `Product/offer: ${input.product}
-Target audience: ${input.audience}
-Tone: ${input.tone}
-Campaign objective: ${input.objective}
+    const system = `Bạn là copywriter chuyên về quảng cáo phản hồi trực tiếp (direct-response) cho Meta (Facebook/Instagram), phục vụ thị trường Việt Nam.
+Viết nội dung quảng cáo "dừng tay lướt" giúp đạt mục tiêu đề ra. Mỗi biến thể dùng một góc tiếp cận
+khác nhau (ví dụ: vấn đề/giải pháp, bằng chứng xã hội, khẩn cấp/khan hiếm, dẫn dắt bằng lợi ích,
+tò mò). Tiêu đề (headline) dưới ~40 ký tự; nội dung chính (primaryText) 1-3 câu ngắn kèm lời kêu gọi
+hành động rõ ràng. Không bịa số liệu hay tuyên bố không kiểm chứng được.
 
-Write 4 ad copy variants.`;
+QUAN TRỌNG: Viết TẤT CẢ bằng tiếng Việt tự nhiên, phù hợp văn hóa Việt Nam.`;
+    const user = `Sản phẩm/ưu đãi: ${input.product}
+Đối tượng mục tiêu: ${input.audience}
+Giọng điệu: ${input.tone}
+Mục tiêu chiến dịch: ${input.objective}
+
+Viết 4 biến thể nội dung quảng cáo bằng tiếng Việt.`;
 
     const params = {
       model: MODEL,
@@ -312,38 +316,38 @@ Write 4 ad copy variants.`;
     return {
       ...heuristicAdCopy(input),
       source: "heuristic",
-      note: `Claude call failed (${
-        err instanceof Error ? err.message : "unknown error"
-      }). Showing templated variants.`,
+      note: `Gọi Claude thất bại (${
+        err instanceof Error ? err.message : "lỗi không xác định"
+      }). Đang hiển thị các mẫu có sẵn.`,
     };
   }
 }
 
 function heuristicAdCopy(input: AdCopyInput): { variants: AdCopyVariant[] } {
-  const p = input.product.trim() || "our product";
-  const a = input.audience.trim() || "you";
+  const p = input.product.trim() || "sản phẩm của chúng tôi";
+  const a = input.audience.trim() || "bạn";
   const variants: AdCopyVariant[] = [
     {
-      angle: "Benefit-led",
-      headline: `Meet ${truncate(p, 28)}`,
-      primaryText: `Made for ${a}. ${capitalize(p)} that just works — see why people are switching. Shop now →`,
+      angle: "Dẫn dắt bằng lợi ích",
+      headline: `${truncate(capitalize(p), 30)}`,
+      primaryText: `Dành riêng cho ${a}. ${capitalize(p)} đơn giản mà hiệu quả — xem vì sao nhiều người đang chuyển sang dùng. Mua ngay →`,
     },
     {
-      angle: "Problem / solution",
-      headline: "Tired of the hassle?",
-      primaryText: `${capitalize(a)} deserve better. ${capitalize(
+      angle: "Vấn đề / giải pháp",
+      headline: "Mệt mỏi vì rắc rối?",
+      primaryText: `${capitalize(a)} xứng đáng điều tốt hơn. ${capitalize(
         p,
-      )} fixes it in minutes, not hours. Try it today.`,
+      )} giải quyết chỉ trong vài phút. Thử ngay hôm nay.`,
     },
     {
-      angle: "Social proof",
-      headline: "Loved by thousands",
-      primaryText: `Join the ${a} who made the switch to ${p}. Real results, zero regret. Get yours →`,
+      angle: "Bằng chứng xã hội",
+      headline: "Được hàng nghìn người tin dùng",
+      primaryText: `Gia nhập cùng ${a} đã chọn ${p}. Kết quả thật, không hối tiếc. Sở hữu ngay →`,
     },
     {
-      angle: "Urgency / scarcity",
-      headline: "Limited-time offer",
-      primaryText: `Don't miss out — ${p} at our best price yet. Offer ends soon. Claim it now.`,
+      angle: "Khẩn cấp / khan hiếm",
+      headline: "Ưu đãi có hạn",
+      primaryText: `Đừng bỏ lỡ — ${p} với mức giá tốt nhất từ trước đến nay. Ưu đãi sắp kết thúc. Nhận ngay.`,
     },
   ];
   return { variants };

@@ -4,9 +4,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { getMode } from "@/lib/meta/config";
 
 export const metadata: Metadata = {
-  title: "AdPilot — AI Facebook Ads automation",
+  title: "AdPilot — Tự động hóa quảng cáo Facebook bằng AI",
   description:
-    "Automate, analyze, and optimize Meta (Facebook) ad campaigns with AI — a Madgicx-style demo.",
+    "Tự động hóa, phân tích và tối ưu chiến dịch quảng cáo Meta (Facebook) bằng AI.",
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <div className="flex min-h-screen">
           <Sidebar mode={getMode()} />

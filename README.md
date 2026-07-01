@@ -8,6 +8,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 > Demo / educational project. The data layer is deliberately abstracted so the
 > mock backend can be swapped for the real Meta Marketing API later.
 
+> 🇻🇳 **Giao diện tiếng Việt, tiền tệ VND (đồng).** Ứng dụng đã được Việt hóa
+> toàn bộ và dùng đồng Việt Nam. AI (gợi ý tối ưu + viết nội dung quảng cáo) trả
+> lời bằng tiếng Việt. Tài khoản Meta dùng VND: đặt `META_CURRENCY_OFFSET=1`
+> (xem phần "Demo mode vs. Live mode" bên dưới).
+
 ## Features
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
@@ -149,8 +154,10 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
   arrays. By default the app looks for `purchase`, then `omni_purchase`, then
   `offsite_conversion.fb_pixel_purchase`. If your numbers look off, set
   `META_CONVERSION_ACTION_TYPE` to the exact action type your pixel/CAPI emits.
-- **Budgets** are read/written in minor units (cents) and shown in **USD** by the
-  formatter — adjust `lib/format.ts` for other account currencies.
+- **Giao diện tiếng Việt, tiền tệ VND (đồng).** Toàn bộ UI đã Việt hóa và hiển
+  thị bằng VND. Nếu tài khoản Meta của bạn dùng VND, đặt
+  `META_CURRENCY_OFFSET=1` (VND không có đơn vị lẻ) để ngân sách hiển thị đúng.
+  Đổi ngôn ngữ/tiền tệ tại `lib/format.ts` (`LOCALE`, `CURRENCY`).
 - **Budget writes** target the **campaign** `daily_budget`, which only applies
   when the campaign uses Campaign Budget Optimization (CBO); otherwise budget
   lives on the ad set.

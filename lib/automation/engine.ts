@@ -44,17 +44,17 @@ function describe(
   const m = METRIC_LABELS[rule.metric];
   switch (rule.action) {
     case "PAUSE":
-      return `${m} is ${v} — pausing "${c.name}" to stop wasted spend.`;
+      return `${m} đang ở mức ${v} — tạm dừng "${c.name}" để ngừng lãng phí chi tiêu.`;
     case "INCREASE_BUDGET":
-      return `${m} is ${v} — raising daily budget by ${rule.adjustPct ?? 0}% (${money(
+      return `${m} đang ở mức ${v} — tăng ngân sách ngày ${rule.adjustPct ?? 0}% (${money(
         c.dailyBudget,
       )} → ${money(c.dailyBudget * (1 + (rule.adjustPct ?? 0) / 100))}).`;
     case "DECREASE_BUDGET":
-      return `${m} is ${v} — cutting daily budget by ${rule.adjustPct ?? 0}% (${money(
+      return `${m} đang ở mức ${v} — giảm ngân sách ngày ${rule.adjustPct ?? 0}% (${money(
         c.dailyBudget,
       )} → ${money(c.dailyBudget * (1 - (rule.adjustPct ?? 0) / 100))}).`;
     case "NOTIFY":
-      return `${m} is ${v} — flagging "${c.name}" for review.`;
+      return `${m} đang ở mức ${v} — gắn cờ "${c.name}" để xem lại.`;
   }
 }
 

@@ -14,14 +14,14 @@ export function CampaignTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-3 font-medium">Campaign</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Budget/day</th>
-              <th className="px-4 py-3 text-right font-medium">Spend</th>
-              <th className="px-4 py-3 text-right font-medium">Revenue</th>
+              <th className="px-4 py-3 font-medium">Chiến dịch</th>
+              <th className="px-4 py-3 font-medium">Trạng thái</th>
+              <th className="px-4 py-3 text-right font-medium">Ngân sách/ngày</th>
+              <th className="px-4 py-3 text-right font-medium">Chi tiêu</th>
+              <th className="px-4 py-3 text-right font-medium">Doanh thu</th>
               <th className="px-4 py-3 text-right font-medium">ROAS</th>
               <th className="px-4 py-3 text-right font-medium">CTR</th>
-              <th className="px-4 py-3 text-right font-medium">Conv.</th>
+              <th className="px-4 py-3 text-right font-medium">Chuyển đổi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -30,8 +30,7 @@ export function CampaignTable({
                 <td className="px-4 py-3">
                   <div className="font-medium text-slate-900">{c.name}</div>
                   <div className="text-xs text-slate-400">
-                    {OBJECTIVE_LABELS[c.objective]} · {c.adSets.length} ad set
-                    {c.adSets.length === 1 ? "" : "s"}
+                    {OBJECTIVE_LABELS[c.objective]} · {c.adSets.length} nhóm quảng cáo
                   </div>
                 </td>
                 <td className="px-4 py-3">
@@ -63,7 +62,7 @@ export function CampaignTable({
                   colSpan={8}
                   className="px-4 py-10 text-center text-sm text-slate-400"
                 >
-                  No campaigns yet.
+                  Chưa có chiến dịch nào.
                 </td>
               </tr>
             ) : null}

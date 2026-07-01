@@ -148,10 +148,15 @@ function rowToMetrics(row: InsightRow): Metrics {
   };
 }
 
-/** Meta budgets are returned in minor units (e.g. cents). */
+/** Meta budgets are returned in minor units (cents for USD, đồng for VND). */
 function minorToMajor(v: unknown): number {
   const n = Number(v);
-  return Number.isFinite(n) ? n / 100 : 0;
+  if (!Number.isFinite(n)) return 0;
+  return n / getMetaConfig().currencyOffset;
+}
+
+function majorToMinor(v: number): number {
+  return Math.round(v * getMetaConfig().currencyOffset);
 }
 
 function normalizeObjective(o: string | undefined): Objective {
@@ -374,7 +379,7 @@ export async function updateAdSetDailyBudgetLive(
   id: string,
   dailyBudget: number,
 ): Promise<void> {
-  await graphPost(id, { daily_budget: String(Math.round(dailyBudget * 100)) });
+  await graphPost(id, { daily_budget: String(majorToMinor(dailyBudget)) });
 }
 
 export async function setAdStatusLive(
@@ -390,7 +395,7 @@ export async function updateCampaignDailyBudgetLive(
 ): Promise<void> {
   // Campaign-level budget only applies when the campaign uses Campaign Budget
   // Optimization (CBO). Otherwise the budget lives on the ad set.
-  await graphPost(id, { daily_budget: String(Math.round(dailyBudget * 100)) });
+  await graphPost(id, { daily_budget: String(majorToMinor(dailyBudget)) });
 }
 
 /**
