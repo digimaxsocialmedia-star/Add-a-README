@@ -43,6 +43,10 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **👥 Audience Studio** — performance by audience (grouped from ad sets),
   audience-type classification, overlap warnings, and AI-suggested new
   audiences to test (lookalikes, interests, retargeting…).
+- **📅 Budget pacing** — set a monthly spend budget and revenue target, then
+  track month-to-date spend against a linear pace line: are you spending ahead,
+  on track, or behind? Projects full-month spend/revenue, flags over/underspend,
+  and recommends the daily budget needed to land exactly on target.
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click. Smart
   threshold suggestions are computed from your own account data.
@@ -98,6 +102,7 @@ app/
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
   audiences/            Audience Studio + AI audience ideas
+  pacing/               Budget pacing vs. monthly targets
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
   ai-insights/          AI recommendations
@@ -120,6 +125,7 @@ lib/
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
   fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
+  pacing/engine.ts      Monthly budget pacing vs. targets
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender

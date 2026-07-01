@@ -341,3 +341,35 @@ export interface AdFatigue {
   reasons: string[];
   recommendation: string;
 }
+
+// ---- Budget pacing (kiểm soát ngân sách theo mục tiêu tháng) ----
+
+export interface MonthlyTargets {
+  monthlyBudget: number;
+  monthlyRevenue: number;
+}
+
+export type PaceStatus = "ahead" | "on_track" | "behind";
+
+export interface PacingResult {
+  monthLabel: string;
+  daysInMonth: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  spendMTD: number;
+  revenueMTD: number;
+  monthlyBudget: number;
+  monthlyRevenue: number;
+  expectedSpendToDate: number; // theo tiến độ tuyến tính
+  avgDailySpend: number;
+  projectedSpend: number; // dự kiến cả tháng
+  projectedRevenue: number;
+  recommendedDailyBudget: number; // để về đúng ngân sách
+  spendPct: number; // MTD / ngân sách
+  overUnderPct: number; // dự kiến so với ngân sách
+  revenuePct: number; // doanh thu MTD / mục tiêu
+  projectedRevenuePct: number;
+  impliedRoas: number;
+  paceStatus: PaceStatus;
+  warnings: string[];
+}
