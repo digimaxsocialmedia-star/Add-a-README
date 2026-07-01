@@ -43,6 +43,15 @@ export async function POST(req: Request) {
     );
   }
 
+  const imageData = (body.imageData ?? "").toString().trim() || undefined;
+  // Chặn payload quá lớn (~5MB ảnh gốc ≈ 7M ký tự base64).
+  if (imageData && imageData.length > 7_000_000) {
+    return NextResponse.json(
+      { error: "Ảnh quá lớn (tối đa ~5MB). Hãy chọn ảnh nhỏ hơn." },
+      { status: 413 },
+    );
+  }
+
   const result = await addCampaign({
     name,
     objective,
@@ -57,6 +66,7 @@ export async function POST(req: Request) {
         : "IMAGE",
     link: (body.link ?? "").toString().trim() || undefined,
     imageUrl: (body.imageUrl ?? "").toString().trim() || undefined,
+    imageData,
   });
 
   return NextResponse.json(result, { status: 201 });

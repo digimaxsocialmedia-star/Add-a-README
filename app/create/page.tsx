@@ -2,7 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, Loader2, Megaphone, Users, Image as ImageIcon } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Megaphone,
+  Users,
+  Image as ImageIcon,
+  Upload,
+  X,
+} from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { OBJECTIVE_LABELS } from "@/lib/types";
 import { money } from "@/lib/format";
@@ -41,7 +49,25 @@ export default function CreatePage() {
     creativeType: "IMAGE" as CreativeType,
     link: "",
     imageUrl: "",
+    imageData: "",
   });
+
+  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    if (!file.type.startsWith("image/")) {
+      setError("Vui lòng chọn tệp hình ảnh.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError("Ảnh quá lớn (tối đa 4MB). Hãy chọn ảnh nhỏ hơn.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => update("imageData", String(reader.result));
+    reader.readAsDataURL(file);
+  }
 
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -114,6 +140,7 @@ export default function CreatePage() {
                     primaryText: "",
                     link: "",
                     imageUrl: "",
+                    imageData: "",
                   }));
                 }}
               >
@@ -283,17 +310,57 @@ export default function CreatePage() {
                   />
                 </div>
                 <div>
-                  <label className="label">URL hình ảnh</label>
+                  <label className="label">Hình ảnh — tải lên trực tiếp</label>
+                  {form.imageData ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={form.imageData}
+                        alt="Xem trước"
+                        className="h-16 w-16 rounded object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-emerald-700">
+                          Đã chọn ảnh tải lên
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          Sẽ tải thẳng lên Meta (image_hash), ưu tiên hơn URL.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-rose-500"
+                        onClick={() => update("imageData", "")}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-brand-400 hover:bg-slate-50">
+                      <Upload className="h-4 w-4" />
+                      Chọn ảnh từ máy (tối đa 4MB)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={onPickImage}
+                      />
+                    </label>
+                  )}
+                </div>
+                <div>
+                  <label className="label">…hoặc dán URL hình ảnh</label>
                   <input
                     className="input"
                     placeholder="https://cuahang.vn/anh.jpg"
                     value={form.imageUrl}
                     onChange={(e) => update("imageUrl", e.target.value)}
+                    disabled={Boolean(form.imageData)}
                   />
                   <p className="mt-1 text-xs text-slate-400">
-                    Cần Link đích + URL hình ảnh (và META_PAGE_ID) để tạo quảng
-                    cáo đầy đủ ở chế độ trực tiếp. Ở chế độ demo, các trường này
-                    là tùy chọn.
+                    Cần Link đích + hình ảnh (tải lên hoặc URL) và META_PAGE_ID để
+                    tạo quảng cáo đầy đủ ở chế độ trực tiếp. Ở chế độ demo, các
+                    trường này là tùy chọn.
                   </p>
                 </div>
               </div>

@@ -533,6 +533,29 @@ function errMsg(err: unknown): string {
 }
 
 /**
+ * Tải ảnh trực tiếp lên Thư viện ảnh của tài khoản quảng cáo và trả về
+ * `image_hash` để dùng trong creative. Nhận data URL (data:image/…;base64,…)
+ * hoặc chuỗi base64 thuần.
+ * Docs: POST /act_<id>/adimages với tham số `bytes` (base64).
+ */
+export async function uploadAdImageLive(dataUrlOrBase64: string): Promise<string> {
+  const { adAccountId } = getMetaConfig();
+  const comma = dataUrlOrBase64.indexOf(",");
+  const bytes =
+    dataUrlOrBase64.startsWith("data:") && comma >= 0
+      ? dataUrlOrBase64.slice(comma + 1)
+      : dataUrlOrBase64;
+  const res = await graphPost(`${adAccountId}/adimages`, { bytes });
+  const images = res.images as Record<string, { hash?: string }> | undefined;
+  const first = images ? Object.values(images)[0] : undefined;
+  const hash = first?.hash;
+  if (!hash) {
+    throw new Error("Meta không trả về image_hash sau khi tải ảnh lên.");
+  }
+  return hash;
+}
+
+/**
  * Tạo đầy đủ Chiến dịch → Nhóm quảng cáo → Creative → Quảng cáo, TẤT CẢ ở
  * trạng thái PAUSED (không bao giờ tự tiêu tiền). Luồng giảm dần một cách an
  * toàn: luôn tạo chiến dịch; tạo nhóm QC nếu được; chỉ tạo creative + quảng cáo
@@ -592,25 +615,30 @@ export async function addCampaignLive(
     warnings.push(`Chưa tạo được nhóm quảng cáo: ${errMsg(err)}`);
   }
 
-  // 3+4) Creative + Quảng cáo (PAUSED) — cần Page + link + ảnh
+  // 3+4) Creative + Quảng cáo (PAUSED) — cần Page + link + ảnh (tải lên hoặc URL)
   if (adSetId) {
+    const hasImage = Boolean(input.imageData || input.imageUrl);
     if (!pageId) {
       warnings.push("Chưa tạo quảng cáo: thiếu META_PAGE_ID (ID Trang Facebook).");
     } else if (!input.link) {
       warnings.push("Chưa tạo quảng cáo: thiếu URL đích (link).");
-    } else if (!input.imageUrl) {
-      warnings.push("Chưa tạo quảng cáo: thiếu URL hình ảnh.");
+    } else if (!hasImage) {
+      warnings.push("Chưa tạo quảng cáo: thiếu hình ảnh (tải lên hoặc URL).");
     } else {
       try {
-        const storySpec = {
-          page_id: pageId,
-          link_data: {
-            message: input.primaryText,
-            link: input.link,
-            name: input.headline,
-            picture: input.imageUrl,
-          },
+        // Ưu tiên ảnh tải lên trực tiếp → dùng image_hash; nếu không có thì
+        // dùng picture (URL) để Meta tự tải về.
+        const linkData: Record<string, unknown> = {
+          message: input.primaryText,
+          link: input.link,
+          name: input.headline,
         };
+        if (input.imageData) {
+          linkData.image_hash = await uploadAdImageLive(input.imageData);
+        } else {
+          linkData.picture = input.imageUrl;
+        }
+        const storySpec = { page_id: pageId, link_data: linkData };
         const creative = await graphPost(`${adAccountId}/adcreatives`, {
           name: `Creative — ${input.name}`,
           object_story_spec: JSON.stringify(storySpec),
