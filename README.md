@@ -20,6 +20,14 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d), per-campaign
   breakdown, CSV export, and automatic anomaly alerts (spend spikes, ROAS/CTR
   drops, zero-conversion spend, account below breakeven).
+- **📧 Email reports** — send a Vietnamese HTML summary (KPIs, health score,
+  top campaigns, alerts) over SMTP. Preview in-app, send on demand, or point a
+  cron at `GET /api/report/email` for daily/weekly delivery. Falls back to a
+  preview when SMTP isn't configured.
+- **🔔 Instant alerts (Telegram / Zalo)** — push anomaly alerts to your phone
+  the moment they appear. Test + send on demand from the Reports page; auto-push
+  when Autopilot is on; or drive `GET /api/alerts/notify` from a cron. De-dupes
+  so you're not spammed with the same alert.
 - **🛡️ Account Audit** — a health score (0–100 + letter grade) from automated
   checks across profitability, efficiency, structure and scaling, each with a
   concrete fix.
@@ -110,8 +118,23 @@ lib/
   alerts/engine.ts      Anomaly detection
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
+  report/email.ts       HTML email report builder + SMTP sender
+  notify/channels.ts    Telegram + Zalo OA senders
+  alerts/notify.ts      Instant-alert runner (new-alert de-dupe)
   format.ts             Metric formatting & derivation
 ```
+
+### Email reports & scheduling
+
+Configure SMTP in `.env.local` (see `.env.example` — e.g. Gmail with an App
+password). Then use the **Reports & Alerts** page to preview or send. For
+automatic delivery, hit `GET /api/report/email` on a schedule:
+
+- **Vercel Cron** — add to `vercel.json`: `{"crons":[{"path":"/api/report/email","schedule":"0 1 * * *"}]}` (daily 08:00 VN time = 01:00 UTC).
+- **cron-job.org / GitHub Actions** — schedule a request to the same URL.
+
+It emails `REPORT_EMAIL_TO`. Without SMTP configured the endpoint returns a
+preview instead of sending.
 
 ### Autopilot in production
 
