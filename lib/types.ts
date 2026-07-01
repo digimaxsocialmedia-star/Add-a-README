@@ -320,3 +320,56 @@ export interface BudgetPlan {
 }
 
 export type ThresholdSuggestions = Record<RuleMetric, number>;
+
+// ---- Ad fatigue (độ "chai" nội dung) ----
+
+export type FatigueStatus = "healthy" | "warning" | "fatigued";
+
+export interface AdFatigue {
+  id: string;
+  name: string;
+  campaignName: string;
+  creativeType: CreativeType;
+  status: EntityStatus;
+  spend: number;
+  ctr: number;
+  frequency: number; // số lần trung bình 1 người thấy quảng cáo
+  ctrChangePct: number; // CTR gần đây so với trước đó (âm = giảm)
+  daysRunning: number;
+  fatigue: FatigueStatus;
+  score: number; // 0-100, cao = chai nặng
+  reasons: string[];
+  recommendation: string;
+}
+
+// ---- Budget pacing (kiểm soát ngân sách theo mục tiêu tháng) ----
+
+export interface MonthlyTargets {
+  monthlyBudget: number;
+  monthlyRevenue: number;
+}
+
+export type PaceStatus = "ahead" | "on_track" | "behind";
+
+export interface PacingResult {
+  monthLabel: string;
+  daysInMonth: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  spendMTD: number;
+  revenueMTD: number;
+  monthlyBudget: number;
+  monthlyRevenue: number;
+  expectedSpendToDate: number; // theo tiến độ tuyến tính
+  avgDailySpend: number;
+  projectedSpend: number; // dự kiến cả tháng
+  projectedRevenue: number;
+  recommendedDailyBudget: number; // để về đúng ngân sách
+  spendPct: number; // MTD / ngân sách
+  overUnderPct: number; // dự kiến so với ngân sách
+  revenuePct: number; // doanh thu MTD / mục tiêu
+  projectedRevenuePct: number;
+  impliedRoas: number;
+  paceStatus: PaceStatus;
+  warnings: string[];
+}

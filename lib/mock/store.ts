@@ -7,6 +7,7 @@ import type {
   DailyPoint,
   LogEntry,
   Metrics,
+  MonthlyTargets,
   Objective,
 } from "../types";
 
@@ -299,6 +300,7 @@ export interface Store {
   log: LogEntry[];
   cooldowns: Record<string, string>; // "ruleId:campaignId" -> ISO timestamp
   notifiedAlertIds: string[]; // cảnh báo đã gửi (chống gửi trùng)
+  targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
 }
 
 function createStore(): Store {
@@ -310,6 +312,8 @@ function createStore(): Store {
     log: [],
     cooldowns: {},
     notifiedAlertIds: [],
+    // Mặc định: ~600 triệu chi/tháng, mục tiêu doanh thu ~1,2 tỷ (ROAS ~2x).
+    targets: { monthlyBudget: 600_000_000, monthlyRevenue: 1_200_000_000 },
   };
 }
 

@@ -10,6 +10,7 @@ import {
   X,
   Pause,
   Play,
+  Copy,
 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { RoasBadge } from "@/components/Badge";
@@ -51,6 +52,7 @@ export default function ManagerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
@@ -78,8 +80,22 @@ export default function ManagerPage() {
       const data = await res.json();
       if (data.error) setError(data.error);
       if (data.tree) setTree(data.tree);
+      return data;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function duplicate(id: string, name: string) {
+    setError(null);
+    setNotice(null);
+    const data = await post({ op: "duplicate", level: "campaign", id });
+    if (data?.duplicated) {
+      const w: string[] = data.duplicated.warnings ?? [];
+      setNotice(
+        `Đã nhân bản "${name}" → "${data.duplicated.name}" (đang tạm dừng).` +
+          (w.length ? ` Lưu ý: ${w.join(" ")}` : ""),
+      );
     }
   }
 
@@ -178,6 +194,15 @@ export default function ManagerPage() {
           </div>
         ) : null}
 
+        {notice ? (
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <span>{notice}</span>
+            <button onClick={() => setNotice(null)} className="text-emerald-500">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
+
         {/* Bulk action bar */}
         {selected.size > 0 ? (
           <div className="card flex items-center justify-between p-3">
@@ -239,6 +264,14 @@ export default function ManagerPage() {
                               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
                                 {c.adSets.length} nhóm QC
                               </span>
+                              <button
+                                onClick={() => duplicate(c.id, c.name)}
+                                disabled={busy}
+                                title="Nhân bản chiến dịch (tạo bản sao đang tạm dừng)"
+                                className="text-slate-300 transition hover:text-brand-600 disabled:opacity-50"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </td>
                           <td className="px-3 py-2.5 text-center">

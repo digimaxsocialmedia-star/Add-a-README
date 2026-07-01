@@ -34,12 +34,20 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **➕ Create ads** — a campaign → ad set → ad wizard (objective, audience,
   budget, creative) that launches a new campaign.
 - **🎛️ Ads Manager** — a 3-level Campaign → Ad set → Ad tree with inline
-  on/off toggles, inline budget editing, and bulk pause/activate.
+  on/off toggles, inline budget editing, bulk pause/activate, and one-click
+  **campaign duplication** (deep-copies ad sets + ads as a paused draft).
 - **🖼️ Creative Studio** — performance by creative format, best/worst ad
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
+- **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
+  CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
+  refreshing or pausing before budget is wasted.
 - **👥 Audience Studio** — performance by audience (grouped from ad sets),
   audience-type classification, overlap warnings, and AI-suggested new
   audiences to test (lookalikes, interests, retargeting…).
+- **📅 Budget pacing** — set a monthly spend budget and revenue target, then
+  track month-to-date spend against a linear pace line: are you spending ahead,
+  on track, or behind? Projects full-month spend/revenue, flags over/underspend,
+  and recommends the daily budget needed to land exactly on target.
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click. Smart
   threshold suggestions are computed from your own account data.
@@ -95,6 +103,7 @@ app/
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
   audiences/            Audience Studio + AI audience ideas
+  pacing/               Budget pacing vs. monthly targets
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
   ai-insights/          AI recommendations
@@ -116,6 +125,8 @@ lib/
   optimizer/engine.ts   Performance-weighted budget reallocation
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
+  fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
+  pacing/engine.ts      Monthly budget pacing vs. targets
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender
@@ -192,6 +203,7 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
 | Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
 | Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → `/adcreatives` → `/ads`, all **PAUSED** |
+| Duplicate a campaign | `POST /<campaign_id>/copies` `deep_copy=true&status_option=PAUSED` (deep-copies ad sets + ads, paused) |
 
 ### Field mapping & caveats
 
