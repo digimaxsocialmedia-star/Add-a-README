@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Download, Bell, AlertTriangle, AlertOctagon, Info } from "lucide-react";
+import {
+  Loader2,
+  Download,
+  Bell,
+  AlertTriangle,
+  AlertOctagon,
+  Info,
+  Mail,
+  Send,
+} from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { RoasBadge } from "@/components/Badge";
@@ -20,6 +29,15 @@ interface ReportData {
   mode: "live" | "demo";
 }
 
+interface EmailResult {
+  sent: boolean;
+  subject: string;
+  to?: string;
+  preview?: string;
+  note?: string;
+  error?: string;
+}
+
 const WINDOWS = [7, 14, 30];
 
 const SEV_META: Record<Severity, { icon: typeof Info; cls: string }> = {
@@ -32,6 +50,29 @@ export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailBusy, setEmailBusy] = useState<null | "preview" | "send">(null);
+  const [emailResult, setEmailResult] = useState<EmailResult | null>(null);
+
+  async function emailAction(preview: boolean) {
+    setEmailBusy(preview ? "preview" : "send");
+    try {
+      const res = await fetch("/api/report/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: emailTo || undefined, preview }),
+      });
+      setEmailResult(await res.json());
+    } catch {
+      setEmailResult({
+        sent: false,
+        subject: "",
+        error: "Không kết nối được máy chủ.",
+      });
+    } finally {
+      setEmailBusy(null);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/report", { cache: "no-store" })
@@ -221,6 +262,83 @@ export default function ReportsPage() {
                   thời gian báo cáo đã cấu hình; các nút khoảng thời gian sẽ áp
                   dụng lại cho biểu đồ xu hướng tổng ở trên.
                 </p>
+              ) : null}
+            </div>
+
+            {/* Báo cáo qua email */}
+            <div className="card p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Mail className="h-4 w-4 text-brand-600" />
+                <h2 className="text-base font-semibold text-slate-900">
+                  Báo cáo qua email
+                </h2>
+              </div>
+              <p className="mb-3 text-sm text-slate-500">
+                Gửi bản tóm tắt 30 ngày (KPI, top chiến dịch, cảnh báo, điểm sức
+                khỏe) tới email. Để gửi tự động định kỳ, trỏ một cron tới{" "}
+                <code className="rounded bg-slate-100 px-1 text-xs">
+                  /api/report/email
+                </code>
+                .
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[220px] flex-1">
+                  <label className="label">Email nhận</label>
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="ban@congty.vn"
+                    value={emailTo}
+                    onChange={(e) => setEmailTo(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn-ghost"
+                  onClick={() => emailAction(true)}
+                  disabled={emailBusy !== null}
+                >
+                  {emailBusy === "preview" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
+                  Xem trước
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={() => emailAction(false)}
+                  disabled={emailBusy !== null}
+                >
+                  {emailBusy === "send" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Gửi ngay
+                </button>
+              </div>
+
+              {emailResult ? (
+                <div className="mt-3">
+                  {emailResult.sent ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                      ✓ Đã gửi báo cáo tới {emailResult.to}
+                    </div>
+                  ) : emailResult.error ? (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      {emailResult.error}
+                    </div>
+                  ) : emailResult.note ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      {emailResult.note}
+                    </div>
+                  ) : null}
+                  {emailResult.preview ? (
+                    <iframe
+                      title="Xem trước email"
+                      srcDoc={emailResult.preview}
+                      className="mt-3 h-[520px] w-full rounded-lg border border-slate-200 bg-white"
+                    />
+                  ) : null}
+                </div>
               ) : null}
             </div>
           </>
