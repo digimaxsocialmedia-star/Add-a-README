@@ -33,7 +33,12 @@ realistic **mock data** out of the box — no Meta account required — and uses
   audience-type classification, overlap warnings, and AI-suggested new
   audiences to test (lookalikes, interests, retargeting…).
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
-  budget 20%", etc. See pending actions and apply them in one click.
+  budget 20%", etc. See pending actions and apply them in one click. Smart
+  threshold suggestions are computed from your own account data.
+- **🚀 Autopilot (Tự lái AI)** — automatic **budget reallocation** by performance
+  (shift budget to winners, cut losers, keeping total ~constant), **scheduled
+  auto-run** of rules (with per-campaign cooldowns to avoid runaway budgets), and
+  an **activity log** of every autonomous action.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
   prioritized, actionable recommendations.
 
@@ -83,11 +88,12 @@ app/
   creatives/            Creative Studio + AI copywriting
   audiences/            Audience Studio + AI audience ideas
   automation/           Automation rules
+  autopilot/            Autopilot: budget optimizer + scheduled runs + log
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
   api/                  Route handlers (campaigns, manager, automation,
-                        report, ai/suggestions, ai/ad-copy)
-components/             Sidebar, charts, tables, cards, ad-copy generator
+                        optimizer, autopilot, report, ai/*)
+components/             Sidebar, charts, tables, cards, generators
 lib/
   types.ts              Domain model (Campaign → Ad Set → Ad, rules, AI, audit)
   meta/
@@ -95,14 +101,25 @@ lib/
     config.ts           Reads Meta env, decides live vs demo
     graph.ts            Real Meta Marketing API implementation
     mock.ts             Demo implementation (backed by the mock store)
-  mock/store.ts         Deterministic mock data + in-memory store
+  mock/store.ts         Deterministic mock data, in-memory store, autopilot state
   automation/engine.ts  Rule evaluation
+  automation/run.ts     Shared rule runner (manual + auto, with cooldowns)
+  automation/thresholds.ts  Smart threshold suggestions from account data
+  optimizer/engine.ts   Performance-weighted budget reallocation
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
   audiences/classify.ts Audience-type classification
-  ai/claude.ts          Claude calls (insights + ad copy) + heuristic fallbacks
+  ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   format.ts             Metric formatting & derivation
 ```
+
+### Autopilot in production
+
+While the Autopilot page is open, a client-side timer calls
+`POST /api/autopilot {op:"tick"}` on the chosen interval. To run it truly
+server-side (even with no browser open), point a scheduler at that endpoint —
+e.g. **Vercel Cron**, **GitHub Actions**, or **cron-job.org**. The tick is a
+no-op when Autopilot is toggled off.
 
 ## Demo mode vs. Live mode (real Meta Marketing API)
 
@@ -151,7 +168,7 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | --- | --- |
 | Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
 | Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
-| Create a campaign (wizard) | `POST /act_<id>/campaigns` (always **PAUSED**) |
+| Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → `/adcreatives` → `/ads`, all **PAUSED** |
 
 ### Field mapping & caveats
 
@@ -166,10 +183,15 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 - **Budget writes** target the **campaign** `daily_budget`, which only applies
   when the campaign uses Campaign Budget Optimization (CBO); otherwise budget
   lives on the ad set.
-- **Campaign creation is deliberately conservative**: the wizard creates a
-  **PAUSED** campaign shell only (no spend). Ad sets, targeting, creatives, and
-  ads need a Page + creative assets — finish those in Ads Manager, or extend
-  `addCampaignLive()` in `lib/meta/graph.ts`.
+- **Full ad creation (Campaign → Ad set → Creative → Ad), always PAUSED.** The
+  wizard's live flow degrades gracefully: it always creates the campaign; adds
+  an ad set (targeting `META_TARGETING_COUNTRY`, ages 18-65, an objective-based
+  optimization goal — conversions when `META_PIXEL_ID` is set, otherwise link
+  clicks); and creates the creative + ad **only when `META_PAGE_ID`, a
+  destination link, and an image URL are all provided**. Anything skipped or
+  failed is reported back as a warning on the success screen. Nothing ever
+  auto-spends — you review and un-pause in Ads Manager (or the Ads Manager
+  page).
 - Misconfiguration (bad token, blocked egress, unreachable account) surfaces a
   clear error in the UI; the rest of the app keeps working.
 

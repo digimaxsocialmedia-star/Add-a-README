@@ -8,6 +8,7 @@ import type {
   AdRow,
   Campaign,
   CampaignWithMetrics,
+  CreateCampaignResult,
   NewCampaignInput,
   SeriesPoint,
 } from "../types";
@@ -76,7 +77,7 @@ export async function getDailySeriesMock(): Promise<SeriesPoint[]> {
 
 export async function addCampaignMock(
   input: NewCampaignInput,
-): Promise<CampaignWithMetrics> {
+): Promise<CreateCampaignResult> {
   const store = getStore();
   store.seq += 1;
   const n = store.seq;
@@ -118,7 +119,7 @@ export async function addCampaignMock(
     ],
   };
   store.campaigns.push(campaign);
-  return withMetrics(campaign);
+  return { campaign: withMetrics(campaign), warnings: [] };
 }
 
 export async function setCampaignStatusMock(

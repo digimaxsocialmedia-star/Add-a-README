@@ -19,6 +19,7 @@ interface Snapshot {
   rules: AutomationRule[];
   evaluations: RuleEvaluation[];
   applied?: string[];
+  thresholds?: Record<RuleMetric, number>;
 }
 
 const METRICS = Object.keys(METRIC_LABELS) as RuleMetric[];
@@ -245,6 +246,21 @@ export default function AutomationPage() {
                             })
                           }
                         />
+                        {data?.thresholds ? (
+                          <button
+                            type="button"
+                            className="mt-1 text-xs font-medium text-brand-600 hover:underline"
+                            onClick={() =>
+                              setDraft({
+                                ...draft,
+                                threshold: data.thresholds![draft.metric],
+                              })
+                            }
+                          >
+                            Gợi ý:{" "}
+                            {data.thresholds[draft.metric].toLocaleString("vi-VN")}
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                     <div>

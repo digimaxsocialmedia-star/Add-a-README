@@ -20,6 +20,7 @@ import type {
   AdRow,
   AudienceRow,
   CampaignWithMetrics,
+  CreateCampaignResult,
   ManagerAdSet,
   ManagerCampaign,
   Metrics,
@@ -54,7 +55,7 @@ export function getDailySeries(): Promise<SeriesPoint[]> {
 
 export function addCampaign(
   input: NewCampaignInput,
-): Promise<CampaignWithMetrics> {
+): Promise<CreateCampaignResult> {
   return isLiveMode() ? live.addCampaignLive(input) : mock.addCampaignMock(input);
 }
 
