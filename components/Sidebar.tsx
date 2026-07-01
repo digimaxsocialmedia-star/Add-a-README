@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
   Images,
   Users,
+  Rocket,
 } from "lucide-react";
 
 const NAV = [
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/creatives", label: "Xưởng nội dung", icon: Images },
   { href: "/audiences", label: "Studio đối tượng", icon: Users },
   { href: "/automation", label: "Tự động hóa", icon: Zap },
+  { href: "/autopilot", label: "Tự lái AI", icon: Rocket },
   { href: "/ai-insights", label: "Gợi ý AI", icon: Sparkles },
 ];
 

@@ -2,8 +2,10 @@ import type {
   Ad,
   AdSet,
   AutomationRule,
+  AutopilotSettings,
   Campaign,
   DailyPoint,
+  LogEntry,
   Metrics,
   Objective,
 } from "../types";
@@ -293,6 +295,9 @@ export interface Store {
   campaigns: Campaign[];
   rules: AutomationRule[];
   seq: number;
+  settings: AutopilotSettings;
+  log: LogEntry[];
+  cooldowns: Record<string, string>; // "ruleId:campaignId" -> ISO timestamp
 }
 
 function createStore(): Store {
@@ -300,7 +305,32 @@ function createStore(): Store {
     campaigns: PROFILES.map((p, i) => buildCampaign(p, i)),
     rules: DEFAULT_RULES.map((r) => ({ ...r })),
     seq: PROFILES.length,
+    settings: { enabled: false, intervalMinutes: 5 },
+    log: [],
+    cooldowns: {},
   };
+}
+
+/** Ghi một dòng nhật ký hoạt động (giữ tối đa 60 dòng gần nhất). */
+export function addLog(entry: Omit<LogEntry, "id" | "at">): void {
+  const store = getStore();
+  store.log.unshift({
+    id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    at: new Date().toISOString(),
+    ...entry,
+  });
+  store.log = store.log.slice(0, 60);
+}
+
+/** Trả về true nếu (rule,campaign) vừa được áp dụng trong `minutes` phút qua. */
+export function onCooldown(key: string, minutes: number): boolean {
+  const at = getStore().cooldowns[key];
+  if (!at) return false;
+  return Date.now() - new Date(at).getTime() < minutes * 60_000;
+}
+
+export function setCooldown(key: string): void {
+  getStore().cooldowns[key] = new Date().toISOString();
 }
 
 // Persist across hot reloads / route invocations within a single server

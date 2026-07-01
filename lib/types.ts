@@ -278,3 +278,37 @@ export interface AudienceIdeaResult {
   model?: string;
   note?: string;
 }
+
+// ---- Autopilot: nhật ký + cài đặt + tối ưu ngân sách ----
+
+export interface LogEntry {
+  id: string;
+  at: string; // ISO
+  kind: "rule" | "optimizer" | "info";
+  message: string;
+  campaignName?: string;
+}
+
+export interface AutopilotSettings {
+  enabled: boolean;
+  intervalMinutes: number;
+  lastRunAt?: string;
+}
+
+export interface BudgetChange {
+  campaignId: string;
+  campaignName: string;
+  current: number;
+  recommended: number;
+  delta: number;
+  deltaPct: number;
+  reason: string;
+}
+
+export interface BudgetPlan {
+  changes: BudgetChange[];
+  totalBefore: number;
+  totalAfter: number;
+}
+
+export type ThresholdSuggestions = Record<RuleMetric, number>;
