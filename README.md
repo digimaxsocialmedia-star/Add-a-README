@@ -202,7 +202,7 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | --- | --- |
 | Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
 | Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
-| Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → `/adcreatives` → `/ads`, all **PAUSED** |
+| Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → (`/adimages` for uploaded images) → `/adcreatives` → `/ads`, all **PAUSED** |
 | Duplicate a campaign | `POST /<campaign_id>/copies` `deep_copy=true&status_option=PAUSED` (deep-copies ad sets + ads, paused) |
 
 ### Field mapping & caveats
@@ -223,10 +223,12 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
   an ad set (targeting `META_TARGETING_COUNTRY`, ages 18-65, an objective-based
   optimization goal — conversions when `META_PIXEL_ID` is set, otherwise link
   clicks); and creates the creative + ad **only when `META_PAGE_ID`, a
-  destination link, and an image URL are all provided**. Anything skipped or
-  failed is reported back as a warning on the success screen. Nothing ever
-  auto-spends — you review and un-pause in Ads Manager (or the Ads Manager
-  page).
+  destination link, and an image are all provided**. The image can be either a
+  **direct file upload** (uploaded to `POST /act_<id>/adimages`, referenced by
+  `image_hash`) or a plain image URL (`picture`) — an uploaded file takes
+  precedence. Anything skipped or failed is reported back as a warning on the
+  success screen. Nothing ever auto-spends — you review and un-pause in Ads
+  Manager (or the Ads Manager page).
 - Misconfiguration (bad token, blocked egress, unreachable account) surfaces a
   clear error in the UI; the rest of the app keeps working.
 

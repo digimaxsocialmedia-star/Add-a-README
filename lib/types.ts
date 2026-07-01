@@ -96,6 +96,7 @@ export interface NewCampaignInput {
   creativeType: CreativeType;
   link?: string; // URL đích cho quảng cáo (live mode)
   imageUrl?: string; // URL hình ảnh cho creative (live mode)
+  imageData?: string; // Ảnh tải lên trực tiếp (data URL base64) — ưu tiên hơn imageUrl
 }
 
 export interface CreateCampaignResult {
