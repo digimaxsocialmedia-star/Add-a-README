@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const campaign = await addCampaign({
+  const result = await addCampaign({
     name,
     objective,
     dailyBudget,
@@ -55,7 +55,9 @@ export async function POST(req: Request) {
       body.creativeType === "VIDEO" || body.creativeType === "CAROUSEL"
         ? body.creativeType
         : "IMAGE",
+    link: (body.link ?? "").toString().trim() || undefined,
+    imageUrl: (body.imageUrl ?? "").toString().trim() || undefined,
   });
 
-  return NextResponse.json({ campaign }, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 }

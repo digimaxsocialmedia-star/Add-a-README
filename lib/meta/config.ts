@@ -8,6 +8,8 @@ export interface MetaConfig {
   datePreset: string;
   conversionActionType?: string;
   pageId?: string;
+  pixelId?: string;
+  targetingCountry: string;
   /** Hệ số quy đổi đơn vị nhỏ nhất → đơn vị chính của tiền tệ tài khoản.
    *  USD/EUR = 100 (cents). VND là tiền tệ không có đơn vị lẻ → đặt = 1. */
   currencyOffset: number;
@@ -41,6 +43,8 @@ export function getMetaConfig(): MetaConfig {
     datePreset: process.env.META_INSIGHTS_DATE_PRESET || "last_30d",
     conversionActionType: process.env.META_CONVERSION_ACTION_TYPE,
     pageId: process.env.META_PAGE_ID,
+    pixelId: process.env.META_PIXEL_ID,
+    targetingCountry: process.env.META_TARGETING_COUNTRY || "VN",
     // Tài khoản VND nên đặt META_CURRENCY_OFFSET=1.
     currencyOffset: Number(process.env.META_CURRENCY_OFFSET) || 100,
   };

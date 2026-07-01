@@ -14,7 +14,9 @@ import { derive } from "../format";
 import type {
   AccountSummary,
   AdRow,
+  AdSet,
   CampaignWithMetrics,
+  CreateCampaignResult,
   DerivedMetrics,
   Metrics,
   NewCampaignInput,
@@ -398,34 +400,160 @@ export async function updateCampaignDailyBudgetLive(
   await graphPost(id, { daily_budget: String(majorToMinor(dailyBudget)) });
 }
 
+interface AdSetOptimization {
+  optimization_goal: string;
+  billing_event: string;
+  promoted_object?: Record<string, unknown>;
+}
+
+/** Mục tiêu tối ưu + sự kiện tính phí hợp lệ theo objective. */
+function adSetOptimization(
+  objective: Objective,
+  pixelId?: string,
+): AdSetOptimization {
+  switch (objective) {
+    case "OUTCOME_AWARENESS":
+      return { optimization_goal: "REACH", billing_event: "IMPRESSIONS" };
+    case "OUTCOME_ENGAGEMENT":
+      return { optimization_goal: "POST_ENGAGEMENT", billing_event: "IMPRESSIONS" };
+    case "OUTCOME_SALES":
+      // Tối ưu chuyển đổi cần pixel; nếu không có, dùng LINK_CLICKS an toàn.
+      if (pixelId) {
+        return {
+          optimization_goal: "OFFSITE_CONVERSIONS",
+          billing_event: "IMPRESSIONS",
+          promoted_object: { pixel_id: pixelId, custom_event_type: "PURCHASE" },
+        };
+      }
+      return { optimization_goal: "LINK_CLICKS", billing_event: "IMPRESSIONS" };
+    case "OUTCOME_LEADS":
+    case "OUTCOME_TRAFFIC":
+    default:
+      return { optimization_goal: "LINK_CLICKS", billing_event: "IMPRESSIONS" };
+  }
+}
+
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : "lỗi không xác định";
+}
+
 /**
- * Create a campaign. Intentionally creates a PAUSED campaign shell only — it
- * never starts spending and it does not auto-create ad sets/creatives/ads
- * (those need a Page, creative assets, targeting and an optimization goal).
- * Finish the build in Ads Manager, or extend this function for your account.
+ * Tạo đầy đủ Chiến dịch → Nhóm quảng cáo → Creative → Quảng cáo, TẤT CẢ ở
+ * trạng thái PAUSED (không bao giờ tự tiêu tiền). Luồng giảm dần một cách an
+ * toàn: luôn tạo chiến dịch; tạo nhóm QC nếu được; chỉ tạo creative + quảng cáo
+ * khi có Page (META_PAGE_ID), link đích và URL hình ảnh. Mỗi bước thiếu/lỗi
+ * được ghi vào `warnings`.
  */
 export async function addCampaignLive(
   input: NewCampaignInput,
-): Promise<CampaignWithMetrics> {
-  const { adAccountId } = getMetaConfig();
+): Promise<CreateCampaignResult> {
+  const { adAccountId, pageId, pixelId, targetingCountry } = getMetaConfig();
+  const warnings: string[] = [];
+
+  // 1) Chiến dịch (PAUSED)
   const created = await graphPost(`${adAccountId}/campaigns`, {
     name: input.name,
     objective: input.objective,
-    status: "PAUSED", // safety: never auto-spend
+    status: "PAUSED",
     special_ad_categories: "[]",
   });
-  const id = created.id as string;
-  return {
-    id,
+  const campaignId = created.id as string;
+
+  const adSets: AdSet[] = [];
+  let adSetId: string | undefined;
+
+  // 2) Nhóm quảng cáo (PAUSED)
+  try {
+    const opt = adSetOptimization(input.objective, pixelId);
+    const targeting = {
+      geo_locations: { countries: [targetingCountry] },
+      age_min: 18,
+      age_max: 65,
+    };
+    const body: Record<string, string> = {
+      name: `${input.audience || "Nhóm quảng cáo"} 1`,
+      campaign_id: campaignId,
+      daily_budget: String(majorToMinor(input.dailyBudget)),
+      billing_event: opt.billing_event,
+      optimization_goal: opt.optimization_goal,
+      bid_strategy: "LOWEST_COST_WITHOUT_CAP",
+      targeting: JSON.stringify(targeting),
+      status: "PAUSED",
+    };
+    if (opt.promoted_object) {
+      body.promoted_object = JSON.stringify(opt.promoted_object);
+    }
+    const adset = await graphPost(`${adAccountId}/adsets`, body);
+    adSetId = adset.id as string;
+    adSets.push({
+      id: adSetId,
+      name: body.name,
+      status: "PAUSED",
+      dailyBudget: input.dailyBudget,
+      audience: input.audience || "Nhóm quảng cáo",
+      ads: [],
+    });
+  } catch (err) {
+    warnings.push(`Chưa tạo được nhóm quảng cáo: ${errMsg(err)}`);
+  }
+
+  // 3+4) Creative + Quảng cáo (PAUSED) — cần Page + link + ảnh
+  if (adSetId) {
+    if (!pageId) {
+      warnings.push("Chưa tạo quảng cáo: thiếu META_PAGE_ID (ID Trang Facebook).");
+    } else if (!input.link) {
+      warnings.push("Chưa tạo quảng cáo: thiếu URL đích (link).");
+    } else if (!input.imageUrl) {
+      warnings.push("Chưa tạo quảng cáo: thiếu URL hình ảnh.");
+    } else {
+      try {
+        const storySpec = {
+          page_id: pageId,
+          link_data: {
+            message: input.primaryText,
+            link: input.link,
+            name: input.headline,
+            picture: input.imageUrl,
+          },
+        };
+        const creative = await graphPost(`${adAccountId}/adcreatives`, {
+          name: `Creative — ${input.name}`,
+          object_story_spec: JSON.stringify(storySpec),
+        });
+        const creativeId = creative.id as string;
+        const ad = await graphPost(`${adAccountId}/ads`, {
+          name: `Quảng cáo — ${input.name}`,
+          adset_id: adSetId,
+          creative: JSON.stringify({ creative_id: creativeId }),
+          status: "PAUSED",
+        });
+        adSets[0].ads.push({
+          id: ad.id as string,
+          name: `Quảng cáo — ${input.name}`,
+          status: "PAUSED",
+          creativeType: input.creativeType,
+          headline: input.headline,
+          primaryText: input.primaryText,
+          metrics: empty(),
+        });
+      } catch (err) {
+        warnings.push(`Chưa tạo được creative/quảng cáo: ${errMsg(err)}`);
+      }
+    }
+  }
+
+  const campaign: CampaignWithMetrics = {
+    id: campaignId,
     name: input.name,
     objective: input.objective,
     status: "PAUSED",
     dailyBudget: input.dailyBudget,
     createdAt: new Date().toISOString().slice(0, 10),
     daily: [],
-    adSets: [],
+    adSets,
     metrics: derive(empty()),
   };
+  return { campaign, warnings };
 }
 
 function empty(): Metrics {

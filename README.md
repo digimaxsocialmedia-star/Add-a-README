@@ -168,7 +168,7 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | --- | --- |
 | Pause a campaign | `POST /<campaign_id>` `status=PAUSED` |
 | Change daily budget | `POST /<campaign_id>` `daily_budget=<cents>` |
-| Create a campaign (wizard) | `POST /act_<id>/campaigns` (always **PAUSED**) |
+| Create ads (wizard) | Full flow — `POST /campaigns` → `/adsets` → `/adcreatives` → `/ads`, all **PAUSED** |
 
 ### Field mapping & caveats
 
@@ -183,10 +183,15 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 - **Budget writes** target the **campaign** `daily_budget`, which only applies
   when the campaign uses Campaign Budget Optimization (CBO); otherwise budget
   lives on the ad set.
-- **Campaign creation is deliberately conservative**: the wizard creates a
-  **PAUSED** campaign shell only (no spend). Ad sets, targeting, creatives, and
-  ads need a Page + creative assets — finish those in Ads Manager, or extend
-  `addCampaignLive()` in `lib/meta/graph.ts`.
+- **Full ad creation (Campaign → Ad set → Creative → Ad), always PAUSED.** The
+  wizard's live flow degrades gracefully: it always creates the campaign; adds
+  an ad set (targeting `META_TARGETING_COUNTRY`, ages 18-65, an objective-based
+  optimization goal — conversions when `META_PIXEL_ID` is set, otherwise link
+  clicks); and creates the creative + ad **only when `META_PAGE_ID`, a
+  destination link, and an image URL are all provided**. Anything skipped or
+  failed is reported back as a warning on the success screen. Nothing ever
+  auto-spends — you review and un-pause in Ads Manager (or the Ads Manager
+  page).
 - Misconfiguration (bad token, blocked egress, unreachable account) surfaces a
   clear error in the UI; the rest of the app keeps working.
 

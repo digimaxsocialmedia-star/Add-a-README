@@ -30,6 +30,7 @@ export default function CreatePage() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "",
     objective: "OUTCOME_SALES" as Objective,
@@ -38,6 +39,8 @@ export default function CreatePage() {
     headline: "",
     primaryText: "",
     creativeType: "IMAGE" as CreativeType,
+    link: "",
+    imageUrl: "",
   });
 
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -61,6 +64,7 @@ export default function CreatePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Không tạo được chiến dịch");
+      setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Đã xảy ra lỗi");
@@ -82,16 +86,35 @@ export default function CreatePage() {
               Đã tạo chiến dịch
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              &ldquo;{form.name}&rdquo; đã được tạo và đang vào giai đoạn học máy.
-              Dữ liệu hiệu suất sẽ xuất hiện khi chiến dịch bắt đầu chi tiêu.
+              &ldquo;{form.name}&rdquo; đã được tạo. Chiến dịch để ở trạng thái
+              Tạm dừng cho an toàn — kiểm tra lại rồi bật chạy khi bạn sẵn sàng.
             </p>
+            {warnings.length ? (
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800">
+                <p className="font-medium">Một số bước chưa hoàn tất:</p>
+                <ul className="mt-1 list-inside list-disc space-y-0.5">
+                  {warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <div className="mt-6 flex justify-center gap-3">
               <button
                 className="btn-ghost"
                 onClick={() => {
                   setDone(false);
                   setStep(1);
-                  setForm((f) => ({ ...f, name: "", audience: "", headline: "", primaryText: "" }));
+                  setWarnings([]);
+                  setForm((f) => ({
+                    ...f,
+                    name: "",
+                    audience: "",
+                    headline: "",
+                    primaryText: "",
+                    link: "",
+                    imageUrl: "",
+                  }));
                 }}
               >
                 Tạo cái khác
@@ -249,6 +272,29 @@ export default function CreatePage() {
                     value={form.primaryText}
                     onChange={(e) => update("primaryText", e.target.value)}
                   />
+                </div>
+                <div>
+                  <label className="label">Link đích (URL)</label>
+                  <input
+                    className="input"
+                    placeholder="https://cuahang.vn/san-pham"
+                    value={form.link}
+                    onChange={(e) => update("link", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label">URL hình ảnh</label>
+                  <input
+                    className="input"
+                    placeholder="https://cuahang.vn/anh.jpg"
+                    value={form.imageUrl}
+                    onChange={(e) => update("imageUrl", e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Cần Link đích + URL hình ảnh (và META_PAGE_ID) để tạo quảng
+                    cáo đầy đủ ở chế độ trực tiếp. Ở chế độ demo, các trường này
+                    là tùy chọn.
+                  </p>
                 </div>
               </div>
             ) : null}

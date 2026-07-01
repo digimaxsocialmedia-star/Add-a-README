@@ -94,6 +94,14 @@ export interface NewCampaignInput {
   headline: string;
   primaryText: string;
   creativeType: CreativeType;
+  link?: string; // URL đích cho quảng cáo (live mode)
+  imageUrl?: string; // URL hình ảnh cho creative (live mode)
+}
+
+export interface CreateCampaignResult {
+  campaign: CampaignWithMetrics;
+  /** Các bước không hoàn tất (chỉ có ý nghĩa ở live mode). */
+  warnings: string[];
 }
 
 export interface SeriesPoint extends DailyPoint {
