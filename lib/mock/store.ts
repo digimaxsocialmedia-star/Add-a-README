@@ -12,6 +12,7 @@ import type {
   MonthlyTargets,
   Objective,
 } from "../types";
+import { round2 } from "../format";
 
 // -----------------------------------------------------------------------------
 // Deterministic mock data generator.
@@ -301,7 +302,7 @@ export interface Store {
   settings: AutopilotSettings;
   log: LogEntry[];
   cooldowns: Record<string, string>; // "ruleId:campaignId" -> ISO timestamp
-  notifiedAlertIds: string[]; // cảnh báo đã gửi (chống gửi trùng)
+  notifiedAlerts: Record<string, string>; // id cảnh báo → ISO lần gửi gần nhất (chống trùng, có hết hạn)
   targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
   schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
   breakeven: BreakevenSettings; // đơn giá + cơ cấu chi phí để tính điểm hòa vốn
@@ -315,7 +316,7 @@ function createStore(): Store {
     settings: { enabled: false, intervalMinutes: 5 },
     log: [],
     cooldowns: {},
-    notifiedAlertIds: [],
+    notifiedAlerts: {},
     // Mặc định: ~600 triệu chi/tháng, mục tiêu doanh thu ~1,2 tỷ (ROAS ~2x).
     targets: { monthlyBudget: 600_000_000, monthlyRevenue: 1_200_000_000 },
     schedules: {},
@@ -360,10 +361,3 @@ export function getStore(): Store {
   return globalThis.__adpilotStore;
 }
 
-// Helpers used by the data layer for newly-created campaigns.
-export { genDaily, aggregate, splitMetrics, isoDaysAgo, round2, CREATIVES };
-export type { Profile };
-
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}

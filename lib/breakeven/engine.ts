@@ -24,7 +24,9 @@ export function computeBreakeven(s: BreakevenSettings): BreakevenResult {
 
 /** Lãi nếu ROAS vượt hòa vốn ≥10%, lỗ nếu hụt ≥10%, còn lại là sát hòa vốn. */
 export function verdictFor(roas: number, breakevenRoas: number): ProfitVerdict {
-  if (breakevenRoas <= 0) return "breakeven";
+  // Biên lãi ≤ 0 (giá vốn + phí ≥ 100%): không ROAS nào cứu được — mọi đồng
+  // chi quảng cáo đều lỗ, không phải "sát hòa vốn".
+  if (breakevenRoas <= 0) return "loss";
   if (roas >= breakevenRoas * 1.1) return "profit";
   if (roas <= breakevenRoas * 0.9) return "loss";
   return "breakeven";

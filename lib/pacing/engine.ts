@@ -13,6 +13,19 @@ const MONTHS_VI = [
   "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12",
 ];
 
+// "Hôm nay" tính theo giờ Việt Nam, không theo múi giờ server (server có thể
+// đặt UTC/Mỹ) — quanh ranh giới tháng, dùng giờ server sẽ lệch cửa sổ MTD.
+const PACING_TIMEZONE = "Asia/Ho_Chi_Minh";
+
+/** Năm/tháng/ngày hiện tại theo giờ VN. Locale en-CA cho định dạng YYYY-MM-DD. */
+function todayInVN(at: Date): { year: number; month: number; dayOfMonth: number } {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: PACING_TIMEZONE })
+    .format(at)
+    .split("-")
+    .map(Number);
+  return { year: y, month: m, dayOfMonth: d }; // month: 1-12
+}
+
 function safeDiv(a: number, b: number): number {
   return b > 0 ? a / b : 0;
 }
@@ -29,12 +42,11 @@ export function computePacing(
   targets: MonthlyTargets,
   now: Date = new Date(),
 ): PacingResult {
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0-11
-  const prefix = `${year}-${String(month + 1).padStart(2, "0")}`; // "YYYY-MM"
+  const { year, month, dayOfMonth } = todayInVN(now); // month: 1-12
+  const prefix = `${year}-${String(month).padStart(2, "0")}`; // "YYYY-MM"
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysElapsed = Math.min(now.getDate(), daysInMonth);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const daysElapsed = Math.min(dayOfMonth, daysInMonth);
   const daysRemaining = Math.max(0, daysInMonth - daysElapsed);
 
   // Chỉ lấy các ngày thuộc tháng dương lịch hiện tại.
@@ -103,7 +115,7 @@ export function computePacing(
   }
 
   return {
-    monthLabel: `${MONTHS_VI[month]}/${year}`,
+    monthLabel: `${MONTHS_VI[month - 1]}/${year}`,
     daysInMonth,
     daysElapsed,
     daysRemaining,

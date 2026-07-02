@@ -63,7 +63,18 @@ export async function POST(req: Request) {
       await setBudget(level, body.id, Number(body.dailyBudget));
     } else if (body.op === "bulk" && Array.isArray(body.ids) && body.action) {
       const status: EntityStatus = body.action === "pause" ? "PAUSED" : "ACTIVE";
-      for (const id of body.ids) await setStatus(level, id, status);
+      // Các lệnh ghi độc lập nhau — chạy song song thay vì tuần tự từng cái.
+      const results = await Promise.allSettled(
+        body.ids.map((id) => setStatus(level, id, status)),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        const tree = await getManagerTree();
+        return NextResponse.json({
+          tree,
+          error: `${failed}/${body.ids.length} thao tác hàng loạt thất bại.`,
+        });
+      }
     } else if (body.op === "duplicate" && body.id) {
       const result = await duplicateCampaign(body.id);
       duplicated = { name: result.campaign.name, warnings: result.warnings };

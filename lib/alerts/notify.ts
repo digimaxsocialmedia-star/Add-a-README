@@ -8,7 +8,11 @@ import {
   type ChannelResult,
   type NotifyChannel,
 } from "../notify/channels";
-import type { Alert } from "../types";
+import type { Alert, CampaignWithMetrics } from "../types";
+
+// Cảnh báo cùng id (vd "spend_spike") được phép gửi LẠI sau khoảng này — dedup
+// vĩnh viễn sẽ nuốt mất các bất thường mới tái diễn (đúng thứ cron cần báo).
+const RENOTIFY_HOURS = 12;
 
 const SEV_ICON: Record<Alert["severity"], string> = {
   high: "🔴",
@@ -51,19 +55,29 @@ export async function sendTestNotification(): Promise<NotifyRun> {
 
 /**
  * Kiểm tra bất thường và gửi cảnh báo.
- * - force = false: chỉ gửi cảnh báo MỚI (chưa từng gửi) — dùng cho cron/Autopilot.
+ * - force = false: chỉ gửi cảnh báo chưa gửi trong RENOTIFY_HOURS giờ qua —
+ *                  dùng cho cron/Autopilot.
  * - force = true:  gửi mọi cảnh báo hiện tại — dùng khi người dùng bấm gửi tay.
+ * `snapshot`: danh sách chiến dịch đã tải sẵn (tránh gọi API lặp trong 1 tick).
  */
-export async function runAlertNotifications(force = false): Promise<NotifyRun> {
+export async function runAlertNotifications(
+  force = false,
+  snapshot?: CampaignWithMetrics[],
+): Promise<NotifyRun> {
   const store = getStore();
   const channels = configuredChannels();
   const [campaigns, series] = await Promise.all([
-    getCampaigns(),
+    snapshot ?? getCampaigns(),
     getDailySeries(),
   ]);
   const alerts = detectAlerts(series, campaigns);
-  const notified = new Set(store.notifiedAlertIds);
-  const fresh = force ? alerts : alerts.filter((a) => !notified.has(a.id));
+  const resendCutoff = Date.now() - RENOTIFY_HOURS * 3_600_000;
+  const fresh = force
+    ? alerts
+    : alerts.filter((a) => {
+        const sentAt = store.notifiedAlerts[a.id];
+        return !sentAt || new Date(sentAt).getTime() < resendCutoff;
+      });
 
   if (channels.length === 0) {
     return {
@@ -79,8 +93,13 @@ export async function runAlertNotifications(force = false): Promise<NotifyRun> {
 
   const results = await notify(formatMessage(fresh));
   if (results.some((r) => r.ok)) {
-    for (const a of fresh) notified.add(a.id);
-    store.notifiedAlertIds = [...notified].slice(-200);
+    const now = new Date().toISOString();
+    for (const a of fresh) store.notifiedAlerts[a.id] = now;
+    // Dọn các mục quá cũ để map không phình vô hạn (id no_conv_* theo chiến dịch).
+    const weekAgo = Date.now() - 7 * 24 * 3_600_000;
+    for (const [id, at] of Object.entries(store.notifiedAlerts)) {
+      if (new Date(at).getTime() < weekAgo) delete store.notifiedAlerts[id];
+    }
     addLog({
       kind: "info",
       message: `Đã gửi ${fresh.length} cảnh báo qua ${results
@@ -93,5 +112,5 @@ export async function runAlertNotifications(force = false): Promise<NotifyRun> {
 }
 
 export function resetNotified(): void {
-  getStore().notifiedAlertIds = [];
+  getStore().notifiedAlerts = {};
 }

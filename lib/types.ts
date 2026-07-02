@@ -45,6 +45,12 @@ export interface DailyPoint {
 
 export type CreativeType = "IMAGE" | "VIDEO" | "CAROUSEL";
 
+export const CREATIVE_TYPE_LABELS: Record<CreativeType, string> = {
+  IMAGE: "Hình ảnh",
+  VIDEO: "Video",
+  CAROUSEL: "Carousel",
+};
+
 export interface Ad {
   id: string;
   name: string;

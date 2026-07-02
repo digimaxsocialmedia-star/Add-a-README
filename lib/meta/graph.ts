@@ -10,7 +10,7 @@
 //         conservative — see addCampaignLive.
 
 import { getMetaConfig } from "./config";
-import { derive } from "../format";
+import { derive, emptyMetrics as empty, round2 } from "../format";
 import { classifyFatigue } from "../fatigue/engine";
 import type {
   AccountSummary,
@@ -266,28 +266,64 @@ export async function getCampaignsLive(): Promise<CampaignWithMetrics[]> {
   });
 }
 
+/** Đọc MỘT chiến dịch theo id (3 request nhỏ) thay vì quét cả tài khoản. */
 export async function getCampaignLive(
   id: string,
 ): Promise<CampaignWithMetrics | undefined> {
-  const all = await getCampaignsLive();
-  return all.find((c) => c.id === id);
+  const { datePreset } = getMetaConfig();
+  const [rawJson, insightRes, adsets] = await Promise.all([
+    graphGet(id, {
+      fields: "id,name,objective,status,daily_budget,created_time",
+    }),
+    graphGet(`${id}/insights`, {
+      fields: INSIGHT_FIELDS,
+      date_preset: datePreset,
+    }),
+    graphGetAll<{ id: string; name?: string; status?: string; daily_budget?: string }>(
+      `${id}/adsets`,
+      { fields: "id,name,status,daily_budget" },
+    ),
+  ]);
+  const raw = rawJson as unknown as RawCampaign;
+  const rows = (insightRes.data as InsightRow[] | undefined) ?? [];
+  return {
+    id: raw.id,
+    name: raw.name ?? raw.id,
+    objective: normalizeObjective(raw.objective),
+    status: raw.status === "ACTIVE" ? "ACTIVE" : "PAUSED",
+    dailyBudget: minorToMajor(raw.daily_budget),
+    createdAt: (raw.created_time ?? "").slice(0, 10),
+    daily: [],
+    adSets: adsets.map((a) => ({
+      id: a.id,
+      name: a.name ?? a.id,
+      status: a.status === "ACTIVE" ? "ACTIVE" : "PAUSED",
+      dailyBudget: minorToMajor(a.daily_budget),
+      audience: a.name ?? "Audience",
+      ads: [],
+    })),
+    metrics: derive(rows.length ? rowToMetrics(rows[0]) : empty()),
+  };
 }
 
 export async function getAccountSummaryLive(): Promise<AccountSummary> {
   const { adAccountId, datePreset } = getMetaConfig();
-  const [rows, campaigns] = await Promise.all([
+  const [rows, statuses] = await Promise.all([
     graphGet(`${adAccountId}/insights`, {
       fields: INSIGHT_FIELDS,
       date_preset: datePreset,
     }),
-    getCampaignsLive(),
+    // Chỉ cần đếm — tải mỗi trường status thay vì toàn bộ chiến dịch+insights.
+    graphGetAll<{ status?: string }>(`${adAccountId}/campaigns`, {
+      fields: "status",
+    }),
   ]);
   const data = (rows.data as InsightRow[] | undefined) ?? [];
   const metrics = derive(data.length ? rowToMetrics(data[0]) : empty());
   return {
     metrics,
-    activeCampaigns: campaigns.filter((c) => c.status === "ACTIVE").length,
-    totalCampaigns: campaigns.length,
+    activeCampaigns: statuses.filter((c) => c.status === "ACTIVE").length,
+    totalCampaigns: statuses.length,
   };
 }
 
@@ -700,8 +736,12 @@ export async function duplicateCampaignLive(
     throw new Error("Meta không trả về ID chiến dịch bản sao.");
   }
 
-  const campaign = await getCampaignLive(newId);
-  if (campaign) return { campaign, warnings };
+  try {
+    const campaign = await getCampaignLive(newId);
+    if (campaign) return { campaign, warnings };
+  } catch {
+    /* đọc lại thất bại — rơi xuống khung tối thiểu bên dưới */
+  }
 
   // Sao chép thành công nhưng chưa đọc lại được (độ trễ lập chỉ mục) — trả về
   // khung tối thiểu kèm cảnh báo.
@@ -724,10 +764,3 @@ export async function duplicateCampaignLive(
   };
 }
 
-function empty(): Metrics {
-  return { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
-}
-
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}

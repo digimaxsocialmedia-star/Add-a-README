@@ -8,8 +8,9 @@
 // -----------------------------------------------------------------------------
 
 import { getCampaigns, setCampaignStatus } from "../meta/client";
-import { addLog, getStore } from "../mock/store";
-import type { DaypartSchedule } from "../types";
+import { addLog, getStore, onCooldown } from "../mock/store";
+import { RULE_COOLDOWN_MIN } from "../automation/run";
+import type { CampaignWithMetrics, DaypartSchedule } from "../types";
 
 /** Lịch luôn được hiểu theo giờ Việt Nam, bất kể server đặt ở đâu. */
 export const SCHEDULE_TIMEZONE = "Asia/Ho_Chi_Minh";
@@ -57,16 +58,32 @@ export function isOnAt(s: DaypartSchedule, day: number, hour: number): boolean {
   return s.grid[day]?.[hour] === 1;
 }
 
+/** Chiến dịch có đang bị một quy tắc PAUSE tạm dừng gần đây không (còn cooldown). */
+function pausedByRuleRecently(campaignId: string): boolean {
+  return getStore().rules.some(
+    (r) =>
+      r.enabled &&
+      r.action === "PAUSE" &&
+      onCooldown(`${r.id}:${campaignId}`, RULE_COOLDOWN_MIN),
+  );
+}
+
 /**
  * Áp dụng mọi lịch đang bật: chiến dịch trong khung giờ → ACTIVE, ngoài khung
- * giờ → PAUSED. Trả về danh sách thông báo cho các thay đổi đã thực hiện.
+ * giờ → PAUSED. KHÔNG bật lại chiến dịch vừa bị quy tắc hiệu suất tạm dừng
+ * (còn trong cooldown) — nếu không hai engine sẽ bật/tắt giẫm nhau và chiến
+ * dịch thua lỗ cứ được bật lại chạy tiếp. Trả về thông báo các thay đổi.
+ * `snapshot`: danh sách chiến dịch đã tải sẵn; trạng thái trong snapshot được
+ * cập nhật tại chỗ để engine chạy sau trong cùng tick thấy đúng.
  */
-export async function runDayparting(): Promise<string[]> {
+export async function runDayparting(
+  snapshot?: CampaignWithMetrics[],
+): Promise<string[]> {
   const schedules = Object.values(getStore().schedules).filter((s) => s.enabled);
   if (!schedules.length) return [];
 
   const { day, hour } = nowInScheduleTz();
-  const campaigns = await getCampaigns();
+  const campaigns = snapshot ?? (await getCampaigns());
   const applied: string[] = [];
 
   for (const s of schedules) {
@@ -74,7 +91,9 @@ export async function runDayparting(): Promise<string[]> {
     if (!c) continue;
     const desired = isOnAt(s, day, hour) ? "ACTIVE" : "PAUSED";
     if (c.status === desired) continue;
+    if (desired === "ACTIVE" && pausedByRuleRecently(c.id)) continue;
     await setCampaignStatus(c.id, desired);
+    c.status = desired;
     const msg =
       desired === "ACTIVE"
         ? `Lịch chạy: BẬT "${c.name}" (trong khung giờ ${hour}h ${DAY_LABELS[day]}).`

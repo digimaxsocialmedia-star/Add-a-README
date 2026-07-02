@@ -7,17 +7,21 @@ import {
   nowInScheduleTz,
   runDayparting,
 } from "@/lib/dayparting/engine";
+import type { CampaignWithMetrics } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-async function state(applied: string[] = []) {
-  const campaigns = (await getCampaigns()).map((c) => ({
+async function state(
+  applied: string[] = [],
+  campaigns?: CampaignWithMetrics[],
+) {
+  const list = (campaigns ?? (await getCampaigns())).map((c) => ({
     id: c.id,
     name: c.name,
     status: c.status,
   }));
   return {
-    campaigns,
+    campaigns: list,
     schedules: getStore().schedules,
     now: nowInScheduleTz(),
     applied,
@@ -29,8 +33,11 @@ async function state(applied: string[] = []) {
 // GET /api/dayparting?run=1  → áp dụng lịch ngay (dùng cho cron bên ngoài)
 export async function GET(req: Request) {
   const run = new URL(req.url).searchParams.get("run");
-  const applied = run ? await runDayparting() : [];
-  return NextResponse.json(await state(applied));
+  if (!run) return NextResponse.json(await state());
+  // Tải 1 lần, dùng chung cho cả áp lịch lẫn snapshot trả về.
+  const campaigns = await getCampaigns();
+  const applied = await runDayparting(campaigns);
+  return NextResponse.json(await state(applied, campaigns));
 }
 
 export async function POST(req: Request) {
@@ -69,8 +76,9 @@ export async function POST(req: Request) {
   }
 
   if (body.op === "tick") {
-    const applied = await runDayparting();
-    return NextResponse.json(await state(applied));
+    const campaigns = await getCampaigns();
+    const applied = await runDayparting(campaigns);
+    return NextResponse.json(await state(applied, campaigns));
   }
 
   return NextResponse.json({ error: "Thao tác không hợp lệ" }, { status: 400 });

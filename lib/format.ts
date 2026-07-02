@@ -30,7 +30,6 @@ const dec2 = new Intl.NumberFormat(LOCALE, {
 });
 
 export const money = (n: number) => vnd.format(Math.round(n || 0));
-export const money0 = (n: number) => vnd.format(Math.round(n || 0));
 export const moneyCompact = (n: number) => vndCompact.format(n || 0);
 export const compactNum = (n: number) => compact.format(n || 0);
 export const intNum = (n: number) => int.format(Math.round(n || 0));
@@ -43,6 +42,11 @@ export const fmtDate = (d: string) =>
     day: "numeric",
     month: "short",
   });
+
+/** Bộ chỉ số rỗng (0 hết) — dùng chung thay vì lặp literal ở nhiều nơi. */
+export function emptyMetrics(): Metrics {
+  return { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
+}
 
 /** Cộng dồn danh sách chỉ số thô. */
 export function sumMetrics(items: Metrics[]): Metrics {
@@ -77,6 +81,6 @@ export function derive(m: Metrics): DerivedMetrics {
   };
 }
 
-function round2(n: number) {
+export function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
