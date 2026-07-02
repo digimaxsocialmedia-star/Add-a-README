@@ -5,6 +5,7 @@ import type {
   AutopilotSettings,
   Campaign,
   DailyPoint,
+  DaypartSchedule,
   LogEntry,
   Metrics,
   MonthlyTargets,
@@ -301,6 +302,7 @@ export interface Store {
   cooldowns: Record<string, string>; // "ruleId:campaignId" -> ISO timestamp
   notifiedAlertIds: string[]; // cảnh báo đã gửi (chống gửi trùng)
   targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
+  schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
 }
 
 function createStore(): Store {
@@ -314,6 +316,7 @@ function createStore(): Store {
     notifiedAlertIds: [],
     // Mặc định: ~600 triệu chi/tháng, mục tiêu doanh thu ~1,2 tỷ (ROAS ~2x).
     targets: { monthlyBudget: 600_000_000, monthlyRevenue: 1_200_000_000 },
+    schedules: {},
   };
 }
 
