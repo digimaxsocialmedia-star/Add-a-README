@@ -48,6 +48,12 @@ realistic **mock data** out of the box — no Meta account required — and uses
   track month-to-date spend against a linear pace line: are you spending ahead,
   on track, or behind? Projects full-month spend/revenue, flags over/underspend,
   and recommends the daily budget needed to land exactly on target.
+- **🕐 Dayparting** — per-campaign hour-of-day / day-of-week schedules on a
+  7×24 click-and-drag grid (Vietnam time). Campaigns auto-activate inside the
+  chosen hours and auto-pause outside them; presets for "golden hours 8-23h",
+  office hours, etc. Applied every minute while the page is open, on the
+  Autopilot tick, or via cron at `GET /api/dayparting?run=1`. Every change is
+  logged to the Autopilot activity log.
 - **⚡ Automation rules** — "if ROAS < 1 then pause", "if ROAS > 3 then increase
   budget 20%", etc. See pending actions and apply them in one click. Smart
   threshold suggestions are computed from your own account data.
@@ -104,6 +110,7 @@ app/
   creatives/            Creative Studio + AI copywriting
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
+  schedule/             Dayparting (7×24 hour grid per campaign)
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
   ai-insights/          AI recommendations
@@ -127,6 +134,7 @@ lib/
   alerts/engine.ts      Anomaly detection
   fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
   pacing/engine.ts      Monthly budget pacing vs. targets
+  dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender

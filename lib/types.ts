@@ -293,7 +293,7 @@ export interface AudienceIdeaResult {
 export interface LogEntry {
   id: string;
   at: string; // ISO
-  kind: "rule" | "optimizer" | "info";
+  kind: "rule" | "optimizer" | "daypart" | "info";
   message: string;
   campaignName?: string;
 }
@@ -341,6 +341,15 @@ export interface AdFatigue {
   score: number; // 0-100, cao = chai nặng
   reasons: string[];
   recommendation: string;
+}
+
+// ---- Dayparting (lịch chạy theo khung giờ) ----
+
+export interface DaypartSchedule {
+  campaignId: string;
+  enabled: boolean;
+  /** Lưới 7 ngày × 24 giờ (0 = Thứ 2 … 6 = Chủ nhật), 1 = được phép chạy. */
+  grid: number[][];
 }
 
 // ---- Budget pacing (kiểm soát ngân sách theo mục tiêu tháng) ----
