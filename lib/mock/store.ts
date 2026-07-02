@@ -7,6 +7,7 @@ import type {
   Campaign,
   DailyPoint,
   DaypartSchedule,
+  HistoryEntry,
   LogEntry,
   Metrics,
   MonthlyTargets,
@@ -306,6 +307,7 @@ export interface Store {
   targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
   schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
   breakeven: BreakevenSettings; // đơn giá + cơ cấu chi phí để tính điểm hòa vốn
+  history: HistoryEntry[]; // lịch sử thay đổi (mới nhất trước)
 }
 
 function createStore(): Store {
@@ -322,6 +324,7 @@ function createStore(): Store {
     schedules: {},
     // Mặc định: đơn 800k, giá vốn 40%, phí 15% → biên lãi 45%.
     breakeven: { aov: 800_000, cogsPct: 40, feesPct: 15 },
+    history: [],
   };
 }
 

@@ -1,5 +1,6 @@
 import { getCampaigns, updateCampaignDailyBudget } from "../meta/client";
 import { addLog } from "../mock/store";
+import { runAsActor } from "../history/engine";
 import { money, roasFmt } from "../format";
 import type { BudgetChange, BudgetPlan, CampaignWithMetrics } from "../types";
 
@@ -86,7 +87,9 @@ export async function applyBudgetPlan(): Promise<{
   const applied: string[] = [];
   for (const ch of plan.changes) {
     if (ch.recommended === ch.current) continue;
-    await updateCampaignDailyBudget(ch.campaignId, ch.recommended);
+    await runAsActor("optimizer", () =>
+      updateCampaignDailyBudget(ch.campaignId, ch.recommended),
+    );
     const msg = `Tối ưu ngân sách "${ch.campaignName}": ${money(
       ch.current,
     )} → ${money(ch.recommended)} (${ch.delta >= 0 ? "+" : ""}${ch.deltaPct.toFixed(0)}%)`;

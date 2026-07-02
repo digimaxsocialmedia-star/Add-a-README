@@ -77,6 +77,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
   (shift budget to winners, cut losers, keeping total ~constant), **scheduled
   auto-run** of rules (with per-campaign cooldowns to avoid runaway budgets), and
   an **activity log** of every autonomous action.
+- **⏪ Change history + undo** — every write (status toggles, budget changes —
+  whether made by you, an automation rule, dayparting, or the budget optimizer)
+  is recorded at the data-layer facade with before/after values and the actor
+  who caused it. One-click undo restores the previous value through the same
+  facade, and the undo itself is recorded too.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
   prioritized, actionable recommendations.
 
@@ -133,6 +138,7 @@ app/
   schedule/             Dayparting (7×24 hour grid per campaign)
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
+  history/              Change history + one-click undo
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
   api/                  Route handlers (campaigns, manager, automation,
@@ -157,6 +163,8 @@ lib/
   pacing/engine.ts      Monthly budget pacing vs. targets
   breakeven/engine.ts   Breakeven thresholds + campaign profit grading
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
+  history/engine.ts     Change recording (at the client.ts facade) + actor context
+  history/undo.ts       One-click undo (restores the before-value)
   report/compare.ts     Period-over-period KPI comparison
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences +

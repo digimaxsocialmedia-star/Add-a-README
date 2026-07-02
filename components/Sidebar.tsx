@@ -21,6 +21,7 @@ import {
   Calculator,
   FlaskConical,
   ScanEye,
+  History,
 } from "lucide-react";
 
 const NAV = [
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/schedule", label: "Lịch chạy theo giờ", icon: CalendarClock },
   { href: "/automation", label: "Tự động hóa", icon: Zap },
   { href: "/autopilot", label: "Tự lái AI", icon: Rocket },
+  { href: "/history", label: "Lịch sử thay đổi", icon: History },
   { href: "/ai-insights", label: "Gợi ý AI", icon: Sparkles },
 ];
 

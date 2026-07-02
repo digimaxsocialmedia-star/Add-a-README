@@ -349,6 +349,36 @@ export interface AdFatigue {
   recommendation: string;
 }
 
+// ---- Lịch sử thay đổi + hoàn tác ----
+
+export type HistoryAction =
+  | "campaign_status"
+  | "adset_status"
+  | "ad_status"
+  | "campaign_budget"
+  | "adset_budget"
+  | "campaign_created"
+  | "campaign_duplicated";
+
+/** Ai gây ra thay đổi: người dùng, quy tắc tự động, lịch chạy giờ, hay tối ưu NS. */
+export type HistoryActor = "user" | "rule" | "daypart" | "optimizer";
+
+export interface HistoryEntry {
+  id: string;
+  at: string; // ISO
+  action: HistoryAction;
+  actor: HistoryActor;
+  targetId: string;
+  targetName?: string;
+  /** Giá trị trước/sau — status ("ACTIVE"/"PAUSED") hoặc ngân sách (chuỗi số). */
+  before?: string;
+  after?: string;
+  /** Có thể hoàn tác không (cần biết giá trị trước). */
+  undoable: boolean;
+  /** Đã hoàn tác lúc nào (nếu có). */
+  undoneAt?: string;
+}
+
 // ---- AI chấm điểm ảnh creative (Claude vision) ----
 
 export interface CreativeScoreItem {
