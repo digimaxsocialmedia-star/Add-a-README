@@ -12,18 +12,12 @@ import {
   X,
 } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
-import { OBJECTIVE_LABELS } from "@/lib/types";
+import { CREATIVE_TYPE_LABELS, OBJECTIVE_LABELS } from "@/lib/types";
 import { money } from "@/lib/format";
 import type { Objective, CreativeType } from "@/lib/types";
 
 const OBJECTIVES = Object.keys(OBJECTIVE_LABELS) as Objective[];
-const CREATIVES: CreativeType[] = ["IMAGE", "VIDEO", "CAROUSEL"];
-
-const CREATIVE_LABELS: Record<CreativeType, string> = {
-  IMAGE: "Hình ảnh",
-  VIDEO: "Video",
-  CAROUSEL: "Carousel",
-};
+const CREATIVES = Object.keys(CREATIVE_TYPE_LABELS) as CreativeType[];
 
 const STEPS = [
   { id: 1, label: "Chiến dịch", icon: Megaphone },
@@ -277,7 +271,7 @@ export default function CreatePage() {
                             : "border-slate-200 hover:bg-slate-50"
                         }`}
                       >
-                        {CREATIVE_LABELS[c]}
+                        {CREATIVE_TYPE_LABELS[c]}
                       </button>
                     ))}
                   </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStore, addLog } from "@/lib/mock/store";
+import { getCampaigns } from "@/lib/meta/client";
 import { runAutomationRules } from "@/lib/automation/run";
 import { runAlertNotifications } from "@/lib/alerts/notify";
 import { runDayparting } from "@/lib/dayparting/engine";
@@ -46,16 +47,22 @@ export async function POST(req: Request) {
     if (!store.settings.enabled) {
       return NextResponse.json({ ...state(), skipped: "Tự lái đang tắt" });
     }
-    const { applied } = await runAutomationRules("auto");
-    // Áp dụng lịch chạy theo giờ (dayparting) — không chặn tick nếu lỗi.
+    // Tải danh sách chiến dịch MỘT lần và chia sẻ cho cả 3 engine (ở live mode
+    // mỗi lần tải là nhiều request Graph API). Thứ tự: lịch chạy TRƯỚC, quy
+    // tắc SAU — để quy tắc hiệu suất là tiếng nói cuối cùng trong một tick
+    // (lịch bật lên, quy tắc thấy xấu thì tắt ngay trong cùng tick).
+    const campaigns = await getCampaigns();
+    const applied: string[] = [];
     try {
-      applied.push(...(await runDayparting()));
+      applied.push(...(await runDayparting(campaigns)));
     } catch {
       /* bỏ qua lỗi dayparting */
     }
+    const rules = await runAutomationRules("auto", campaigns);
+    applied.push(...rules.applied);
     // Đẩy cảnh báo mới qua Telegram/Zalo (nếu có cấu hình) — không chặn tick.
     try {
-      await runAlertNotifications(false);
+      await runAlertNotifications(false, campaigns);
     } catch {
       /* bỏ qua lỗi gửi cảnh báo */
     }

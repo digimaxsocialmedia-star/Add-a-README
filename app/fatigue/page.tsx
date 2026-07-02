@@ -2,15 +2,10 @@ import { Flame, HeartPulse, AlertTriangle, Ban } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { getAdFatigue } from "@/lib/meta/client";
 import { pct } from "@/lib/format";
-import type { AdFatigue, CreativeType, FatigueStatus } from "@/lib/types";
+import { CREATIVE_TYPE_LABELS } from "@/lib/types";
+import type { AdFatigue, FatigueStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const FORMAT_LABELS: Record<CreativeType, string> = {
-  IMAGE: "Hình ảnh",
-  VIDEO: "Video",
-  CAROUSEL: "Carousel",
-};
 
 const STATUS_META: Record<
   FatigueStatus,
@@ -33,7 +28,7 @@ function Row({ a }: { a: AdFatigue }) {
       <td className="px-4 py-3">
         <div className="font-medium text-slate-900">{a.name}</div>
         <div className="text-xs text-slate-400">
-          {FORMAT_LABELS[a.creativeType]} · {a.campaignName}
+          {CREATIVE_TYPE_LABELS[a.creativeType]} · {a.campaignName}
         </div>
         <div className="mt-1 text-xs text-slate-500">{a.reasons.join(" · ")}</div>
       </td>

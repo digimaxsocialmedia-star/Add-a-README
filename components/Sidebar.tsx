@@ -18,6 +18,8 @@ import {
   Flame,
   Gauge,
   CalendarClock,
+  Calculator,
+  FlaskConical,
 } from "lucide-react";
 
 const NAV = [
@@ -29,8 +31,10 @@ const NAV = [
   { href: "/create", label: "Tạo quảng cáo", icon: PlusCircle },
   { href: "/creatives", label: "Xưởng nội dung", icon: Images },
   { href: "/fatigue", label: "Độ chai nội dung", icon: Flame },
+  { href: "/abtest", label: "A/B Test nội dung", icon: FlaskConical },
   { href: "/audiences", label: "Studio đối tượng", icon: Users },
   { href: "/pacing", label: "Kiểm soát ngân sách", icon: Gauge },
+  { href: "/breakeven", label: "Điểm hòa vốn", icon: Calculator },
   { href: "/schedule", label: "Lịch chạy theo giờ", icon: CalendarClock },
   { href: "/automation", label: "Tự động hóa", icon: Zap },
   { href: "/autopilot", label: "Tự lái AI", icon: Rocket },

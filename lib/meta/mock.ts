@@ -2,7 +2,7 @@
 // are absent. Backed by the deterministic in-memory store (lib/mock/store.ts).
 
 import { getStore } from "../mock/store";
-import { derive, sumMetrics } from "../format";
+import { derive, emptyMetrics, sumMetrics } from "../format";
 import { classifyFatigue } from "../fatigue/engine";
 import type {
   AccountSummary,
@@ -21,13 +21,6 @@ function withMetrics(c: Campaign): CampaignWithMetrics {
 
 export async function getCampaignsMock(): Promise<CampaignWithMetrics[]> {
   return getStore().campaigns.map(withMetrics);
-}
-
-export async function getCampaignMock(
-  id: string,
-): Promise<CampaignWithMetrics | undefined> {
-  const c = getStore().campaigns.find((x) => x.id === id);
-  return c ? withMetrics(c) : undefined;
 }
 
 export async function getAccountSummaryMock(): Promise<AccountSummary> {
@@ -84,7 +77,6 @@ export async function addCampaignMock(
   store.seq += 1;
   const n = store.seq;
   const today = new Date().toISOString().slice(0, 10);
-  const empty = { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
   const campaign: Campaign = {
     id: `cmp_${n}`,
     name: input.name,
@@ -114,7 +106,7 @@ export async function addCampaignMock(
             creativeType: input.creativeType,
             headline: input.headline,
             primaryText: input.primaryText,
-            metrics: { ...empty },
+            metrics: emptyMetrics(),
           },
         ],
       },
@@ -134,7 +126,6 @@ export async function duplicateCampaignMock(
   }
   store.seq += 1;
   const n = store.seq;
-  const empty = { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
 
   // Sao chép cấu trúc (nhóm QC + quảng cáo + ngân sách + đối tượng) nhưng đặt
   // lại hiệu suất về 0 và trạng thái PAUSED — bản sao chưa từng chạy.
@@ -159,7 +150,7 @@ export async function duplicateCampaignMock(
         creativeType: ad.creativeType,
         headline: ad.headline,
         primaryText: ad.primaryText,
-        metrics: { ...empty },
+        metrics: emptyMetrics(),
       })),
     })),
   };

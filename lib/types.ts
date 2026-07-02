@@ -45,6 +45,12 @@ export interface DailyPoint {
 
 export type CreativeType = "IMAGE" | "VIDEO" | "CAROUSEL";
 
+export const CREATIVE_TYPE_LABELS: Record<CreativeType, string> = {
+  IMAGE: "Hình ảnh",
+  VIDEO: "Video",
+  CAROUSEL: "Carousel",
+};
+
 export interface Ad {
   id: string;
   name: string;
@@ -341,6 +347,60 @@ export interface AdFatigue {
   score: number; // 0-100, cao = chai nặng
   reasons: string[];
   recommendation: string;
+}
+
+// ---- A/B test nội dung (so sánh 2 quảng cáo, kết luận thống kê) ----
+
+/** Kiểm định z 2 tỷ lệ (CTR hoặc CVR) giữa mẫu A và mẫu B. */
+export interface ProportionTest {
+  rateA: number; // %
+  rateB: number; // %
+  liftPct: number; // bên thắng hơn bên thua bao nhiêu % (tương đối)
+  zScore: number;
+  pValue: number; // 2 đuôi
+  confidencePct: number; // (1 − pValue) × 100
+  winner: "A" | "B" | null; // null: chưa phân định
+  significant: boolean; // đạt ngưỡng tin cậy ≥ 95%
+  sampleA: number; // cỡ mẫu (hiển thị hoặc lượt nhấp)
+  sampleB: number;
+}
+
+export interface AbTestResult {
+  ctr: ProportionTest | null; // null nếu thiếu dữ liệu hiển thị
+  cvr: ProportionTest | null; // null nếu thiếu lượt nhấp
+  verdict: string; // kết luận tiếng Việt
+  recommendation: string; // hành động đề xuất
+  /** Ad thua với độ tin cậy ≥95% (để nút "tạm dừng mẫu thua"), nếu có. */
+  loserAdId?: string;
+}
+
+// ---- Điểm hòa vốn (breakeven) ----
+
+export interface BreakevenSettings {
+  aov: number; // giá bán trung bình mỗi đơn (đ)
+  cogsPct: number; // % giá vốn hàng bán trên giá bán
+  feesPct: number; // % phí khác (sàn, ship, thanh toán…) trên giá bán
+}
+
+export interface BreakevenResult {
+  marginPct: number; // % lãi gộp còn lại để trả cho quảng cáo
+  marginPerOrder: number; // đ lãi gộp/đơn = CPA tối đa cho phép
+  breakevenRoas: number; // ROAS hòa vốn
+}
+
+export type ProfitVerdict = "profit" | "breakeven" | "loss";
+
+export interface CampaignProfit {
+  id: string;
+  name: string;
+  status: EntityStatus;
+  spend: number;
+  revenue: number;
+  roas: number;
+  cpa: number;
+  conversions: number;
+  estProfit: number; // lãi/lỗ ròng ước tính = doanh thu × biên lãi − chi tiêu
+  verdict: ProfitVerdict;
 }
 
 // ---- Dayparting (lịch chạy theo khung giờ) ----

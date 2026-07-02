@@ -12,7 +12,12 @@ function metricValue(c: CampaignWithMetrics, metric: RuleMetric): number {
     case "roas":
       return c.metrics.roas;
     case "cpa":
-      return c.metrics.cpa;
+      // derive() trả cpa=0 khi chưa có chuyển đổi; với quy tắc CPA, chiến dịch
+      // đốt tiền mà không ra chuyển đổi phải bị coi là CPA vô hạn (tệ nhất),
+      // nếu không nó sẽ lọt qua mọi ngưỡng "CPA quá cao".
+      return c.metrics.conversions === 0 && c.metrics.spend > 0
+        ? Number.POSITIVE_INFINITY
+        : c.metrics.cpa;
     case "ctr":
       return c.metrics.ctr;
     case "cpc":

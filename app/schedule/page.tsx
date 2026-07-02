@@ -90,7 +90,8 @@ export default function SchedulePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Trong khi mở trang, tự áp dụng lịch mỗi 60 giây.
+  // Trong khi mở trang, tự áp dụng lịch mỗi 60 giây. Chạy cả khi tab ở nền —
+  // người dùng chủ đích để tab mở cho lịch hoạt động (xem ghi chú cuối trang).
   useEffect(() => {
     const t = setInterval(() => post({ op: "tick" }, true), 60_000);
     return () => clearInterval(t);

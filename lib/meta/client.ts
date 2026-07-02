@@ -40,10 +40,6 @@ export function getCampaigns(): Promise<CampaignWithMetrics[]> {
   return isLiveMode() ? live.getCampaignsLive() : mock.getCampaignsMock();
 }
 
-export function getCampaign(id: string): Promise<CampaignWithMetrics | undefined> {
-  return isLiveMode() ? live.getCampaignLive(id) : mock.getCampaignMock(id);
-}
-
 export function getAccountSummary(): Promise<AccountSummary> {
   return isLiveMode()
     ? live.getAccountSummaryLive()
