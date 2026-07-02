@@ -16,6 +16,7 @@ import { TopBar } from "@/components/TopBar";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { RoasBadge } from "@/components/Badge";
 import { derive, sumMetrics, money, pct, intNum, roasFmt } from "@/lib/format";
+import { comparePeriods } from "@/lib/report/compare";
 import type {
   Alert,
   CampaignWithMetrics,
@@ -128,6 +129,7 @@ export default function ReportsPage() {
     const series = data.series.slice(-days);
     const dateSet = new Set(series.map((s) => s.date));
     const totals = derive(sumMetrics(series));
+    const compare = comparePeriods(data.series, days);
 
     const rows = data.campaigns.map((c) => {
       const hasDaily = c.daily && c.daily.length > 0;
@@ -136,7 +138,7 @@ export default function ReportsPage() {
       return { id: c.id, name: c.name, status: c.status, metrics, windowed: hasDaily };
     });
     rows.sort((a, b) => b.metrics.spend - a.metrics.spend);
-    return { series, totals, rows };
+    return { series, totals, rows, compare };
   }, [data, days]);
 
   function exportCsv() {
@@ -305,14 +307,53 @@ export default function ReportsPage() {
               ))}
             </div>
 
-            {/* KPI row */}
+            {/* KPI row — kèm so sánh với kỳ liền trước */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-              <Kpi label="Chi tiêu" value={money(view.totals.spend)} />
-              <Kpi label="Doanh thu" value={money(view.totals.revenue)} />
-              <Kpi label="ROAS" value={roasFmt(view.totals.roas)} />
-              <Kpi label="Chuyển đổi" value={intNum(view.totals.conversions)} />
-              <Kpi label="CTR" value={pct(view.totals.ctr)} />
+              <Kpi
+                label="Chi tiêu"
+                value={money(view.totals.spend)}
+                delta={view.compare.deltas.spend}
+                goodWhenUp={null}
+              />
+              <Kpi
+                label="Doanh thu"
+                value={money(view.totals.revenue)}
+                delta={view.compare.deltas.revenue}
+                goodWhenUp={true}
+              />
+              <Kpi
+                label="ROAS"
+                value={roasFmt(view.totals.roas)}
+                delta={view.compare.deltas.roas}
+                goodWhenUp={true}
+              />
+              <Kpi
+                label="Chuyển đổi"
+                value={intNum(view.totals.conversions)}
+                delta={view.compare.deltas.conversions}
+                goodWhenUp={true}
+              />
+              <Kpi
+                label="CTR"
+                value={pct(view.totals.ctr)}
+                delta={view.compare.deltas.ctr}
+                goodWhenUp={true}
+              />
             </div>
+            {view.compare.availability !== "none" ? (
+              <p className="-mt-3 text-xs text-slate-400">
+                % so với {days} ngày liền trước
+                {view.compare.availability === "partial"
+                  ? ` (kỳ trước chỉ có ${view.compare.prevDays} ngày dữ liệu — so theo trung bình/ngày)`
+                  : ""}
+                . Kỳ trước: chi {money(view.compare.previous.spend)} · ROAS{" "}
+                {roasFmt(view.compare.previous.roas)}.
+              </p>
+            ) : (
+              <p className="-mt-3 text-xs text-slate-400">
+                Chưa đủ dữ liệu kỳ trước để so sánh (cần hơn {days} ngày lịch sử).
+              </p>
+            )}
 
             {/* Chart */}
             <div className="card p-5">
@@ -459,11 +500,41 @@ export default function ReportsPage() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label,
+  value,
+  delta,
+  goodWhenUp,
+}: {
+  label: string;
+  value: string;
+  /** % thay đổi so với kỳ trước; null/undefined = không so sánh được. */
+  delta?: number | null;
+  /** true: tăng là tốt · false: giảm là tốt · null: trung tính. */
+  goodWhenUp?: boolean | null;
+}) {
+  let badge: React.ReactNode = null;
+  if (delta != null && Number.isFinite(delta)) {
+    const up = delta >= 0;
+    const cls =
+      goodWhenUp == null
+        ? "bg-slate-100 text-slate-600"
+        : up === goodWhenUp
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-rose-50 text-rose-700";
+    badge = (
+      <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums ${cls}`}>
+        {up ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}%
+      </span>
+    );
+  }
   return (
     <div className="card p-4">
       <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-slate-900">{value}</p>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <p className="text-xl font-semibold text-slate-900">{value}</p>
+        {badge}
+      </div>
     </div>
   );
 }
