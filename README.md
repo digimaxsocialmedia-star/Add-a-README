@@ -43,6 +43,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
   CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
   refreshing or pausing before budget is wasted.
+- **🧪 A/B creative testing** — pick any two ads and get a real statistical
+  answer instead of eyeballing: two-proportion z-tests on CTR and conversion
+  rate, a confidence meter with 80%/95% markers, a Vietnamese verdict
+  ("winner" only at ≥95% confidence, CVR outranks CTR), and a one-click
+  "pause the loser" action when the result is significant.
 - **👥 Audience Studio** — performance by audience (grouped from ad sets),
   audience-type classification, overlap warnings, and AI-suggested new
   audiences to test (lookalikes, interests, retargeting…).
@@ -114,6 +119,7 @@ app/
   manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
+  abtest/               A/B creative testing (z-test + verdict)
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
   breakeven/            Breakeven CPA/ROAS + est. profit per campaign
@@ -140,6 +146,7 @@ lib/
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
   fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
+  abtest/engine.ts      Two-proportion z-tests + verdict copy
   pacing/engine.ts      Monthly budget pacing vs. targets
   breakeven/engine.ts   Breakeven thresholds + campaign profit grading
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
