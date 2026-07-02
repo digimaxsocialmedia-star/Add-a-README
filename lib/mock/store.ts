@@ -3,6 +3,7 @@ import type {
   AdSet,
   AutomationRule,
   AutopilotSettings,
+  BreakevenSettings,
   Campaign,
   DailyPoint,
   DaypartSchedule,
@@ -303,6 +304,7 @@ export interface Store {
   notifiedAlertIds: string[]; // cảnh báo đã gửi (chống gửi trùng)
   targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
   schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
+  breakeven: BreakevenSettings; // đơn giá + cơ cấu chi phí để tính điểm hòa vốn
 }
 
 function createStore(): Store {
@@ -317,6 +319,8 @@ function createStore(): Store {
     // Mặc định: ~600 triệu chi/tháng, mục tiêu doanh thu ~1,2 tỷ (ROAS ~2x).
     targets: { monthlyBudget: 600_000_000, monthlyRevenue: 1_200_000_000 },
     schedules: {},
+    // Mặc định: đơn 800k, giá vốn 40%, phí 15% → biên lãi 45%.
+    breakeven: { aov: 800_000, cogsPct: 40, feesPct: 15 },
   };
 }
 

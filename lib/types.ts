@@ -343,6 +343,35 @@ export interface AdFatigue {
   recommendation: string;
 }
 
+// ---- Điểm hòa vốn (breakeven) ----
+
+export interface BreakevenSettings {
+  aov: number; // giá bán trung bình mỗi đơn (đ)
+  cogsPct: number; // % giá vốn hàng bán trên giá bán
+  feesPct: number; // % phí khác (sàn, ship, thanh toán…) trên giá bán
+}
+
+export interface BreakevenResult {
+  marginPct: number; // % lãi gộp còn lại để trả cho quảng cáo
+  marginPerOrder: number; // đ lãi gộp/đơn = CPA tối đa cho phép
+  breakevenRoas: number; // ROAS hòa vốn
+}
+
+export type ProfitVerdict = "profit" | "breakeven" | "loss";
+
+export interface CampaignProfit {
+  id: string;
+  name: string;
+  status: EntityStatus;
+  spend: number;
+  revenue: number;
+  roas: number;
+  cpa: number;
+  conversions: number;
+  estProfit: number; // lãi/lỗ ròng ước tính = doanh thu × biên lãi − chi tiêu
+  verdict: ProfitVerdict;
+}
+
 // ---- Dayparting (lịch chạy theo khung giờ) ----
 
 export interface DaypartSchedule {

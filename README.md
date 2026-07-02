@@ -17,9 +17,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
   conversions, with a 30-day spend/revenue/ROAS chart and a top-campaigns table.
-- **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d), per-campaign
-  breakdown, CSV export, and automatic anomaly alerts (spend spikes, ROAS/CTR
-  drops, zero-conversion spend, account below breakeven).
+- **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d) with
+  **period-over-period comparison** (each KPI shows % change vs. the previous
+  window, color-coded by whether the move is good), per-campaign breakdown,
+  CSV export, and automatic anomaly alerts (spend spikes, ROAS/CTR drops,
+  zero-conversion spend, account below breakeven).
 - **📧 Email reports** — send a Vietnamese HTML summary (KPIs, health score,
   top campaigns, alerts) over SMTP. Preview in-app, send on demand, or point a
   cron at `GET /api/report/email` for daily/weekly delivery. Falls back to a
@@ -48,6 +50,10 @@ realistic **mock data** out of the box — no Meta account required — and uses
   track month-to-date spend against a linear pace line: are you spending ahead,
   on track, or behind? Projects full-month spend/revenue, flags over/underspend,
   and recommends the daily budget needed to land exactly on target.
+- **🧮 Breakeven** — enter your average order value, cost of goods % and fees
+  %, and the app derives *your* max allowed CPA and breakeven ROAS, grades
+  every campaign Lãi / Sát hòa vốn / Lỗ against those thresholds, and estimates
+  net profit per campaign (revenue × margin − ad spend).
 - **🕐 Dayparting** — per-campaign hour-of-day / day-of-week schedules on a
   7×24 click-and-drag grid (Vietnam time). Campaigns auto-activate inside the
   chosen hours and auto-pause outside them; presets for "golden hours 8-23h",
@@ -110,6 +116,7 @@ app/
   creatives/            Creative Studio + AI copywriting
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
+  breakeven/            Breakeven CPA/ROAS + est. profit per campaign
   schedule/             Dayparting (7×24 hour grid per campaign)
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
@@ -134,7 +141,9 @@ lib/
   alerts/engine.ts      Anomaly detection
   fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
   pacing/engine.ts      Monthly budget pacing vs. targets
+  breakeven/engine.ts   Breakeven thresholds + campaign profit grading
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
+  report/compare.ts     Period-over-period KPI comparison
   audiences/classify.ts Audience-type classification
   ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender
