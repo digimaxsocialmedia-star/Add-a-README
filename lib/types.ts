@@ -349,6 +349,25 @@ export interface AdFatigue {
   recommendation: string;
 }
 
+// ---- AI chấm điểm ảnh creative (Claude vision) ----
+
+export interface CreativeScoreItem {
+  criterion: string; // tên tiêu chí (vd "Thông điệp & hook")
+  score: number; // 0-10
+  comment: string; // nhận xét ngắn cho tiêu chí này
+}
+
+export interface CreativeScoreResult {
+  totalScore: number; // 0-100
+  verdict: string; // nhận xét tổng thể 1-2 câu
+  strengths: string[]; // điểm mạnh
+  improvements: string[]; // đề xuất chỉnh sửa cụ thể
+  items: CreativeScoreItem[]; // điểm theo từng tiêu chí (rỗng khi không phân tích được)
+  source: "claude" | "heuristic";
+  model?: string;
+  note?: string;
+}
+
 // ---- A/B test nội dung (so sánh 2 quảng cáo, kết luận thống kê) ----
 
 /** Kiểm định z 2 tỷ lệ (CTR hoặc CVR) giữa mẫu A và mẫu B. */

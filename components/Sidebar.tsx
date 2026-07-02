@@ -20,6 +20,7 @@ import {
   CalendarClock,
   Calculator,
   FlaskConical,
+  ScanEye,
 } from "lucide-react";
 
 const NAV = [
@@ -30,6 +31,7 @@ const NAV = [
   { href: "/manager", label: "Quản lý quảng cáo", icon: SlidersHorizontal },
   { href: "/create", label: "Tạo quảng cáo", icon: PlusCircle },
   { href: "/creatives", label: "Xưởng nội dung", icon: Images },
+  { href: "/creative-score", label: "AI chấm điểm ảnh", icon: ScanEye },
   { href: "/fatigue", label: "Độ chai nội dung", icon: Flame },
   { href: "/abtest", label: "A/B Test nội dung", icon: FlaskConical },
   { href: "/audiences", label: "Studio đối tượng", icon: Users },

@@ -11,6 +11,8 @@ import type {
   AudienceIdeaResult,
   AudienceRow,
   CampaignWithMetrics,
+  CreativeScoreItem,
+  CreativeScoreResult,
 } from "../types";
 
 // Per the project's Claude integration: use the latest Opus model.
@@ -462,6 +464,184 @@ Hướng dẫn:
       }). Đang hiển thị gợi ý theo quy tắc.`,
     };
   }
+}
+
+// -----------------------------------------------------------------------------
+// AI chấm điểm ảnh creative (Claude vision) — nhìn ảnh quảng cáo và góp ý
+// TRƯỚC KHI chạy, thay vì đốt tiền rồi mới biết ảnh yếu.
+// -----------------------------------------------------------------------------
+
+/** 6 tiêu chí chấm cố định để UI hiển thị ổn định giữa các lần chấm. */
+const SCORE_CRITERIA = [
+  "Thông điệp & hook",
+  "Lượng chữ trên ảnh",
+  "Kêu gọi hành động (CTA)",
+  "Màu sắc & độ tương phản",
+  "Chất lượng hình ảnh",
+  "Phù hợp xem trên điện thoại",
+] as const;
+
+const CREATIVE_SCORE_SCHEMA = {
+  type: "object",
+  properties: {
+    totalScore: { type: "integer" },
+    verdict: { type: "string" },
+    strengths: { type: "array", items: { type: "string" } },
+    improvements: { type: "array", items: { type: "string" } },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          criterion: { type: "string", enum: [...SCORE_CRITERIA] },
+          score: { type: "integer" },
+          comment: { type: "string" },
+        },
+        required: ["criterion", "score", "comment"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["totalScore", "verdict", "strengths", "improvements", "items"],
+  additionalProperties: false,
+} as const;
+
+export interface CreativeScoreInput {
+  /** Ảnh dạng data URL (data:image/…;base64,…). */
+  imageData: string;
+  headline?: string;
+  primaryText?: string;
+}
+
+/** Tách media type + chuỗi base64 thuần từ data URL. */
+function splitDataUrl(dataUrl: string): { mediaType: string; data: string } {
+  const m = /^data:(image\/(?:png|jpeg|gif|webp));base64,(.+)$/s.exec(dataUrl);
+  if (m) return { mediaType: m[1], data: m[2] };
+  // Không phải data URL chuẩn — coi như base64 thuần của ảnh JPEG.
+  const comma = dataUrl.indexOf(",");
+  return {
+    mediaType: "image/jpeg",
+    data: comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl,
+  };
+}
+
+export async function scoreCreativeImage(
+  input: CreativeScoreInput,
+): Promise<CreativeScoreResult> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      ...manualChecklist(),
+      source: "heuristic",
+      note: "Đặt ANTHROPIC_API_KEY để Claude phân tích ảnh. Đang hiển thị danh sách tự kiểm tra.",
+    };
+  }
+  try {
+    const client = new Anthropic();
+    const system = `Bạn là giám đốc sáng tạo (creative director) kỳ cựu chuyên quảng cáo Meta (Facebook/Instagram) cho thị trường Việt Nam.
+Bạn nhận được MỘT ảnh quảng cáo và (nếu có) tiêu đề + nội dung chính đi kèm. Hãy chấm điểm ảnh này TRƯỚC KHI nhà quảng cáo chi tiền chạy.
+
+QUAN TRỌNG: Viết HOÀN TOÀN BẰNG TIẾNG VIỆT, thẳng thắn và cụ thể — chỉ ra đúng chỗ cần sửa, không khen xã giao.
+
+Chấm theo đúng 6 tiêu chí sau, mỗi tiêu chí 0-10 điểm (một mục cho mỗi tiêu chí, không thêm bớt):
+${SCORE_CRITERIA.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
+Lưu ý chuyên môn:
+- Ảnh nhiều chữ (>20% diện tích) thường bị Meta giảm phân phối — trừ điểm mạnh ở tiêu chí 2.
+- Hook phải "dừng tay lướt" trong 1-2 giây đầu trên màn hình điện thoại nhỏ.
+- Nếu có tiêu đề/nội dung đi kèm, đánh giá độ KHỚP giữa ảnh và lời (ảnh một đằng chữ một nẻo là lỗi nặng).
+- totalScore = tổng thể 0-100 (không nhất thiết là trung bình cộng — cân theo mức ảnh hưởng).
+- strengths: 2-4 điểm mạnh. improvements: 2-5 chỉnh sửa CỤ THỂ có thể làm ngay (vd "tăng cỡ chữ giá lên gấp đôi", không nói chung chung "cải thiện thiết kế").`;
+
+    const { mediaType, data } = splitDataUrl(input.imageData);
+    const context =
+      [
+        input.headline ? `Tiêu đề đi kèm: ${input.headline}` : "",
+        input.primaryText ? `Nội dung chính đi kèm: ${input.primaryText}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n") || "(Không có tiêu đề/nội dung đi kèm — chỉ chấm ảnh.)";
+
+    const params = {
+      model: MODEL,
+      max_tokens: 3072,
+      thinking: { type: "adaptive" },
+      system,
+      output_config: {
+        format: { type: "json_schema", schema: CREATIVE_SCORE_SCHEMA },
+      },
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data },
+            },
+            {
+              type: "text",
+              text: `${context}\n\nHãy chấm điểm ảnh quảng cáo này theo 6 tiêu chí.`,
+            },
+          ],
+        },
+      ],
+    };
+    const response = (await client.messages.create(params as never)) as {
+      content: Array<{ type: string; text?: string }>;
+    };
+    const textBlock = response.content.find(
+      (b) => b.type === "text" && typeof b.text === "string",
+    );
+    if (!textBlock?.text) throw new Error("No text block in response");
+    const parsed = JSON.parse(textBlock.text) as {
+      totalScore: number;
+      verdict: string;
+      strengths: string[];
+      improvements: string[];
+      items: CreativeScoreItem[];
+    };
+    if (!Array.isArray(parsed.items) || parsed.items.length === 0) {
+      throw new Error("Empty score items");
+    }
+    return {
+      totalScore: Math.max(0, Math.min(100, Math.round(parsed.totalScore))),
+      verdict: parsed.verdict,
+      strengths: parsed.strengths ?? [],
+      improvements: parsed.improvements ?? [],
+      items: parsed.items.map((i) => ({
+        ...i,
+        score: Math.max(0, Math.min(10, Math.round(i.score))),
+      })),
+      source: "claude",
+      model: MODEL,
+    };
+  } catch (err) {
+    return {
+      ...manualChecklist(),
+      source: "heuristic",
+      note: `Gọi Claude thất bại (${
+        err instanceof Error ? err.message : "lỗi không xác định"
+      }). Đang hiển thị danh sách tự kiểm tra.`,
+    };
+  }
+}
+
+/** Khi không phân tích được ảnh: trả checklist tự kiểm tra thay vì điểm bịa. */
+function manualChecklist(): Omit<CreativeScoreResult, "source"> {
+  return {
+    totalScore: 0,
+    verdict:
+      "Chưa phân tích được ảnh bằng AI — hãy tự rà theo danh sách dưới đây trước khi chạy.",
+    strengths: [],
+    improvements: [
+      "Hook 1-2 giây đầu: nhìn ảnh thu nhỏ trên điện thoại, có muốn dừng tay lướt không?",
+      "Chữ trên ảnh dưới ~20% diện tích — nhiều chữ bị Meta giảm phân phối.",
+      "Có CTA rõ ràng (Mua ngay / Nhắn tin / Đăng ký) và giá/ưu đãi nổi bật.",
+      "Màu chủ thể tương phản mạnh với nền — không chìm khi lướt nhanh.",
+      "Ảnh sắc nét, không vỡ khi hiển thị trên màn hình nhỏ; chủ thể chiếm phần lớn khung.",
+      "Ảnh và tiêu đề/nội dung phải khớp nhau — ảnh một đằng chữ một nẻo làm giảm chuyển đổi.",
+    ],
+    items: [],
+  };
 }
 
 function heuristicAudienceIdeas(

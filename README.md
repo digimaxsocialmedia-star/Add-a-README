@@ -43,6 +43,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
   CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
   refreshing or pausing before budget is wasted.
+- **👁 AI creative scoring** — upload an ad image (optionally with its headline
+  and primary text) and Claude vision grades it 0-100 across 6 fixed criteria
+  (hook, text-on-image ratio, CTA, color/contrast, image quality, mobile fit)
+  with concrete fix-it suggestions — before any money is spent. Falls back to a
+  manual pre-flight checklist when no API key is configured.
 - **🧪 A/B creative testing** — pick any two ads and get a real statistical
   answer instead of eyeballing: two-proportion z-tests on CTR and conversion
   rate, a confidence meter with 80%/95% markers, a Vietnamese verdict
@@ -75,9 +80,10 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
   prioritized, actionable recommendations.
 
-> The two AI features (AI Insights, Creative Studio copywriting) call Claude when
-> `ANTHROPIC_API_KEY` is set and fall back to a built-in heuristic engine
-> otherwise, so every feature works out of the box.
+> The AI features (AI Insights, Creative Studio copywriting, audience ideas,
+> and vision creative scoring) call Claude when `ANTHROPIC_API_KEY` is set and
+> fall back to a built-in heuristic engine (or a manual checklist, for image
+> scoring) otherwise, so every feature works out of the box.
 
 ## Tech stack
 
@@ -119,6 +125,7 @@ app/
   manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
+  creative-score/       AI creative scoring (Claude vision, 6 criteria)
   abtest/               A/B creative testing (z-test + verdict)
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
@@ -152,7 +159,8 @@ lib/
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
   report/compare.ts     Period-over-period KPI comparison
   audiences/classify.ts Audience-type classification
-  ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
+  ai/claude.ts          Claude calls (insights + ad copy + audiences +
+                        vision creative scoring) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender
   notify/channels.ts    Telegram + Zalo OA senders
   alerts/notify.ts      Instant-alert runner (new-alert de-dupe)
