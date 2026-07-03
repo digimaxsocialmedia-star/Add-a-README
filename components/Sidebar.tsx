@@ -20,16 +20,21 @@ import {
   CalendarClock,
   Calculator,
   FlaskConical,
+  ScanEye,
+  History,
+  Building2,
 } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/accounts", label: "Đa tài khoản", icon: Building2 },
   { href: "/reports", label: "Báo cáo & Cảnh báo", icon: FileBarChart },
   { href: "/audit", label: "Đánh giá tài khoản", icon: ShieldCheck },
   { href: "/campaigns", label: "Chiến dịch", icon: Megaphone },
   { href: "/manager", label: "Quản lý quảng cáo", icon: SlidersHorizontal },
   { href: "/create", label: "Tạo quảng cáo", icon: PlusCircle },
   { href: "/creatives", label: "Xưởng nội dung", icon: Images },
+  { href: "/creative-score", label: "AI chấm điểm ảnh", icon: ScanEye },
   { href: "/fatigue", label: "Độ chai nội dung", icon: Flame },
   { href: "/abtest", label: "A/B Test nội dung", icon: FlaskConical },
   { href: "/audiences", label: "Studio đối tượng", icon: Users },
@@ -38,6 +43,7 @@ const NAV = [
   { href: "/schedule", label: "Lịch chạy theo giờ", icon: CalendarClock },
   { href: "/automation", label: "Tự động hóa", icon: Zap },
   { href: "/autopilot", label: "Tự lái AI", icon: Rocket },
+  { href: "/history", label: "Lịch sử thay đổi", icon: History },
   { href: "/ai-insights", label: "Gợi ý AI", icon: Sparkles },
 ];
 

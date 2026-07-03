@@ -12,10 +12,19 @@
 // exported here, so neither mode leaks into the rest of the app.
 // -----------------------------------------------------------------------------
 
-import { getAccountLabel, getMode, isLiveMode } from "./config";
+import {
+  getAccountLabel,
+  getActiveAccountId,
+  getMode,
+  isLiveMode,
+  listAccounts,
+} from "./config";
 import { derive, sumMetrics } from "../format";
 import { classifyAudience } from "../audiences/classify";
+import { recordHistory } from "../history/engine";
+import { getStore } from "../mock/store";
 import type {
+  AccountOverview,
   AccountSummary,
   AdFatigue,
   AdRow,
@@ -34,7 +43,40 @@ import * as live from "./graph";
 export type { NewCampaignInput };
 export { getAccountLabel, getMode, isLiveMode };
 
-export const ACCOUNT_NAME = getAccountLabel();
+/** Tổng quan mọi tài khoản đã cấu hình (chi tiêu, doanh thu, ROAS, số camp) —
+ *  demo: đọc từng store; live: gọi insights cho từng act_… song song. */
+export async function getAccountsOverview(): Promise<AccountOverview[]> {
+  const activeId = getActiveAccountId();
+  return Promise.all(
+    listAccounts().map(async (a) => ({
+      ...a,
+      active: a.id === activeId,
+      summary: isLiveMode()
+        ? await live.getAccountSummaryLive(a.id)
+        : await mock.getAccountSummaryMock(a.id),
+    })),
+  );
+}
+
+/** Tra cứu tên + giá trị hiện tại trong store demo — để ghi lịch sử có
+ *  "giá trị trước" chính xác. Ở live mode trả undefined (không đọc thêm API). */
+function demoLookup(
+  id: string,
+): { name: string; status: "ACTIVE" | "PAUSED"; budget?: number } | undefined {
+  if (isLiveMode()) return undefined;
+  for (const c of getStore().campaigns) {
+    if (c.id === id) return { name: c.name, status: c.status, budget: c.dailyBudget };
+    for (const as of c.adSets) {
+      if (as.id === id) return { name: as.name, status: as.status, budget: as.dailyBudget };
+      for (const ad of as.ads) {
+        if (ad.id === id) return { name: ad.name, status: ad.status };
+      }
+    }
+  }
+  return undefined;
+}
+
+const flip = (s: "ACTIVE" | "PAUSED") => (s === "ACTIVE" ? "PAUSED" : "ACTIVE");
 
 export function getCampaigns(): Promise<CampaignWithMetrics[]> {
   return isLiveMode() ? live.getCampaignsLive() : mock.getCampaignsMock();
@@ -50,34 +92,66 @@ export function getDailySeries(): Promise<SeriesPoint[]> {
   return isLiveMode() ? live.getDailySeriesLive() : mock.getDailySeriesMock();
 }
 
-export function addCampaign(
+export async function addCampaign(
   input: NewCampaignInput,
 ): Promise<CreateCampaignResult> {
-  return isLiveMode() ? live.addCampaignLive(input) : mock.addCampaignMock(input);
+  const result = isLiveMode()
+    ? await live.addCampaignLive(input)
+    : await mock.addCampaignMock(input);
+  recordHistory({
+    action: "campaign_created",
+    targetId: result.campaign.id,
+    targetName: result.campaign.name,
+    undoable: false,
+  });
+  return result;
 }
 
-export function duplicateCampaign(id: string): Promise<CreateCampaignResult> {
-  return isLiveMode()
-    ? live.duplicateCampaignLive(id)
-    : mock.duplicateCampaignMock(id);
+export async function duplicateCampaign(id: string): Promise<CreateCampaignResult> {
+  const result = isLiveMode()
+    ? await live.duplicateCampaignLive(id)
+    : await mock.duplicateCampaignMock(id);
+  recordHistory({
+    action: "campaign_duplicated",
+    targetId: result.campaign.id,
+    targetName: result.campaign.name,
+    undoable: false,
+  });
+  return result;
 }
 
-export function setCampaignStatus(
+export async function setCampaignStatus(
   id: string,
   status: "ACTIVE" | "PAUSED",
 ): Promise<void> {
-  return isLiveMode()
-    ? live.setCampaignStatusLive(id, status)
-    : mock.setCampaignStatusMock(id, status);
+  const prev = demoLookup(id);
+  if (isLiveMode()) await live.setCampaignStatusLive(id, status);
+  else await mock.setCampaignStatusMock(id, status);
+  recordHistory({
+    action: "campaign_status",
+    targetId: id,
+    targetName: prev?.name,
+    before: prev?.status ?? flip(status),
+    after: status,
+    undoable: true,
+  });
 }
 
-export function updateCampaignDailyBudget(
+export async function updateCampaignDailyBudget(
   id: string,
   dailyBudget: number,
 ): Promise<void> {
-  return isLiveMode()
-    ? live.updateCampaignDailyBudgetLive(id, dailyBudget)
-    : mock.updateCampaignDailyBudgetMock(id, dailyBudget);
+  const prev = demoLookup(id);
+  if (isLiveMode()) await live.updateCampaignDailyBudgetLive(id, dailyBudget);
+  else await mock.updateCampaignDailyBudgetMock(id, dailyBudget);
+  recordHistory({
+    action: "campaign_budget",
+    targetId: id,
+    targetName: prev?.name,
+    before: prev?.budget != null ? String(Math.round(prev.budget)) : undefined,
+    after: String(Math.round(dailyBudget)),
+    undoable: prev?.budget != null,
+  });
 }
 
 export function getAds(): Promise<AdRow[]> {
@@ -88,31 +162,55 @@ export function getAdFatigue(): Promise<AdFatigue[]> {
   return isLiveMode() ? live.getAdFatigueLive() : mock.getAdFatigueMock();
 }
 
-export function setAdSetStatus(
+export async function setAdSetStatus(
   id: string,
   status: "ACTIVE" | "PAUSED",
 ): Promise<void> {
-  return isLiveMode()
-    ? live.setAdSetStatusLive(id, status)
-    : mock.setAdSetStatusMock(id, status);
+  const prev = demoLookup(id);
+  if (isLiveMode()) await live.setAdSetStatusLive(id, status);
+  else await mock.setAdSetStatusMock(id, status);
+  recordHistory({
+    action: "adset_status",
+    targetId: id,
+    targetName: prev?.name,
+    before: prev?.status ?? flip(status),
+    after: status,
+    undoable: true,
+  });
 }
 
-export function updateAdSetDailyBudget(
+export async function updateAdSetDailyBudget(
   id: string,
   dailyBudget: number,
 ): Promise<void> {
-  return isLiveMode()
-    ? live.updateAdSetDailyBudgetLive(id, dailyBudget)
-    : mock.updateAdSetDailyBudgetMock(id, dailyBudget);
+  const prev = demoLookup(id);
+  if (isLiveMode()) await live.updateAdSetDailyBudgetLive(id, dailyBudget);
+  else await mock.updateAdSetDailyBudgetMock(id, dailyBudget);
+  recordHistory({
+    action: "adset_budget",
+    targetId: id,
+    targetName: prev?.name,
+    before: prev?.budget != null ? String(Math.round(prev.budget)) : undefined,
+    after: String(Math.round(dailyBudget)),
+    undoable: prev?.budget != null,
+  });
 }
 
-export function setAdStatus(
+export async function setAdStatus(
   id: string,
   status: "ACTIVE" | "PAUSED",
 ): Promise<void> {
-  return isLiveMode()
-    ? live.setAdStatusLive(id, status)
-    : mock.setAdStatusMock(id, status);
+  const prev = demoLookup(id);
+  if (isLiveMode()) await live.setAdStatusLive(id, status);
+  else await mock.setAdStatusMock(id, status);
+  recordHistory({
+    action: "ad_status",
+    targetId: id,
+    targetName: prev?.name,
+    before: prev?.status ?? flip(status),
+    after: status,
+    undoable: true,
+  });
 }
 
 /** Builds the 3-level Campaign → Ad set → Ad tree used by the Ads Manager,

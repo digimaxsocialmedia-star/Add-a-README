@@ -10,6 +10,7 @@
 import { getCampaigns, setCampaignStatus } from "../meta/client";
 import { addLog, getStore, onCooldown } from "../mock/store";
 import { RULE_COOLDOWN_MIN } from "../automation/run";
+import { runAsActor } from "../history/engine";
 import type { CampaignWithMetrics, DaypartSchedule } from "../types";
 
 /** Lịch luôn được hiểu theo giờ Việt Nam, bất kể server đặt ở đâu. */
@@ -92,7 +93,7 @@ export async function runDayparting(
     const desired = isOnAt(s, day, hour) ? "ACTIVE" : "PAUSED";
     if (c.status === desired) continue;
     if (desired === "ACTIVE" && pausedByRuleRecently(c.id)) continue;
-    await setCampaignStatus(c.id, desired);
+    await runAsActor("daypart", () => setCampaignStatus(c.id, desired));
     c.status = desired;
     const msg =
       desired === "ACTIVE"

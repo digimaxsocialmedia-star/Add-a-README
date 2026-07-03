@@ -306,8 +306,11 @@ export async function getCampaignLive(
   };
 }
 
-export async function getAccountSummaryLive(): Promise<AccountSummary> {
-  const { adAccountId, datePreset } = getMetaConfig();
+export async function getAccountSummaryLive(
+  accountOverride?: string,
+): Promise<AccountSummary> {
+  const { adAccountId: activeId, datePreset } = getMetaConfig();
+  const adAccountId = accountOverride ?? activeId;
   const [rows, statuses] = await Promise.all([
     graphGet(`${adAccountId}/insights`, {
       fields: INSIGHT_FIELDS,

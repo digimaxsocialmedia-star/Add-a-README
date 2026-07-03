@@ -7,12 +7,14 @@ import type {
   Campaign,
   DailyPoint,
   DaypartSchedule,
+  HistoryEntry,
   LogEntry,
   Metrics,
   MonthlyTargets,
   Objective,
 } from "../types";
 import { round2 } from "../format";
+import { getActiveAccountId } from "../meta/config";
 
 // -----------------------------------------------------------------------------
 // Deterministic mock data generator.
@@ -133,6 +135,69 @@ const PROFILES: Profile[] = [
     audiences: ["Sở thích: SaaS", "Lookalike người đọc"],
   },
 ];
+
+// Tài khoản demo thứ hai ("Thời trang Bloom") — hiệu suất yếu hơn Acme hẳn,
+// để trang Đa tài khoản có sự tương phản đáng xem.
+const BLOOM_PROFILES: Profile[] = [
+  {
+    name: "BST hè — Váy đầm",
+    objective: "OUTCOME_SALES",
+    dailyBudget: 2_500_000,
+    status: "ACTIVE",
+    cpm: 190_000,
+    ctr: 2.2,
+    cvr: 2.8,
+    aov: 650_000,
+    trendPerDay: 0.003,
+    seed: 711,
+    audiences: ["Nữ 18-34 · thời trang", "Tiếp thị lại 30 ngày"],
+  },
+  {
+    name: "Phụ kiện — Túi xách",
+    objective: "OUTCOME_SALES",
+    dailyBudget: 1_800_000,
+    status: "ACTIVE",
+    cpm: 240_000,
+    ctr: 1.4,
+    cvr: 1.5,
+    aov: 900_000,
+    trendPerDay: -0.004,
+    seed: 822,
+    audiences: ["Đã xem túi 14 ngày", "Sở thích: hàng hiệu"],
+  },
+  {
+    name: "Tìm khách mới — Lookalike 2%",
+    objective: "OUTCOME_SALES",
+    dailyBudget: 3_200_000,
+    status: "ACTIVE",
+    cpm: 300_000,
+    ctr: 1.0,
+    cvr: 2.4,
+    aov: 850_000,
+    trendPerDay: -0.002,
+    seed: 933,
+    audiences: ["Lookalike 2% người mua", "Rộng nữ 18-45"],
+  },
+  {
+    name: "Tương tác — Video lookbook",
+    objective: "OUTCOME_ENGAGEMENT",
+    dailyBudget: 900_000,
+    status: "ACTIVE",
+    cpm: 130_000,
+    ctr: 0.9,
+    cvr: 1.2,
+    aov: 500_000,
+    trendPerDay: 0.001,
+    seed: 1044,
+    audiences: ["Fan trang + tương tác 90 ngày", "Sở thích: lookbook"],
+  },
+];
+
+/** Bộ hồ sơ chiến dịch mẫu theo tài khoản demo. */
+const PROFILES_BY_ACCOUNT: Record<string, Profile[]> = {
+  demo_acme: PROFILES,
+  demo_bloom: BLOOM_PROFILES,
+};
 
 function isoDaysAgo(n: number): string {
   const d = new Date();
@@ -306,11 +371,13 @@ export interface Store {
   targets: MonthlyTargets; // mục tiêu ngân sách + doanh thu tháng
   schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
   breakeven: BreakevenSettings; // đơn giá + cơ cấu chi phí để tính điểm hòa vốn
+  history: HistoryEntry[]; // lịch sử thay đổi (mới nhất trước)
 }
 
-function createStore(): Store {
+function createStore(accountId: string): Store {
+  const profiles = PROFILES_BY_ACCOUNT[accountId] ?? PROFILES;
   return {
-    campaigns: PROFILES.map((p, i) => buildCampaign(p, i)),
+    campaigns: profiles.map((p, i) => buildCampaign(p, i)),
     rules: DEFAULT_RULES.map((r) => ({ ...r })),
     seq: PROFILES.length,
     settings: { enabled: false, intervalMinutes: 5 },
@@ -322,6 +389,7 @@ function createStore(): Store {
     schedules: {},
     // Mặc định: đơn 800k, giá vốn 40%, phí 15% → biên lãi 45%.
     breakeven: { aov: 800_000, cogsPct: 40, feesPct: 15 },
+    history: [],
   };
 }
 
@@ -349,15 +417,21 @@ export function setCooldown(key: string): void {
 
 // Persist across hot reloads / route invocations within a single server
 // process. (For the demo this is fine; a real app would use a database.)
+// Mỗi TÀI KHOẢN quảng cáo có một store riêng — chiến dịch demo, quy tắc,
+// lịch chạy, mục tiêu, lịch sử… đều tách bạch theo tài khoản (cả live mode:
+// key là act_… nên trạng thái app không lẫn giữa các tài khoản).
 declare global {
   // eslint-disable-next-line no-var
-  var __adpilotStore: Store | undefined;
+  var __adpilotStores: Record<string, Store> | undefined;
 }
 
+export function getStoreFor(accountId: string): Store {
+  const stores = (globalThis.__adpilotStores ??= {});
+  return (stores[accountId] ??= createStore(accountId));
+}
+
+/** Store của tài khoản ĐANG CHỌN. */
 export function getStore(): Store {
-  if (!globalThis.__adpilotStore) {
-    globalThis.__adpilotStore = createStore();
-  }
-  return globalThis.__adpilotStore;
+  return getStoreFor(getActiveAccountId());
 }
 

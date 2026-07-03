@@ -5,6 +5,7 @@ import {
 } from "../meta/client";
 import { evaluate } from "./engine";
 import { addLog, getStore, onCooldown, setCooldown } from "../mock/store";
+import { runAsActor } from "../history/engine";
 import type { CampaignWithMetrics } from "../types";
 
 export const RULE_COOLDOWN_MIN = 60;
@@ -44,26 +45,29 @@ export async function runAutomationRules(
     if (mode === "auto" && onCooldown(key, cooldownMin)) continue;
 
     try {
-      switch (e.action) {
-        case "PAUSE":
-          await setCampaignStatus(c.id, "PAUSED");
-          c.status = "PAUSED"; // cập nhật snapshot cho engine chạy sau trong cùng tick
-          break;
-        case "INCREASE_BUDGET":
-          await updateCampaignDailyBudget(
-            c.id,
-            Math.round(c.dailyBudget * (1 + pct / 100)),
-          );
-          break;
-        case "DECREASE_BUDGET":
-          await updateCampaignDailyBudget(
-            c.id,
-            Math.round(c.dailyBudget * (1 - pct / 100)),
-          );
-          break;
-        case "NOTIFY":
-          break;
-      }
+      // Ghi lịch sử với danh nghĩa "quy tắc" (phục vụ trang Lịch sử thay đổi).
+      await runAsActor("rule", async () => {
+        switch (e.action) {
+          case "PAUSE":
+            await setCampaignStatus(c.id, "PAUSED");
+            c.status = "PAUSED"; // cập nhật snapshot cho engine chạy sau trong cùng tick
+            break;
+          case "INCREASE_BUDGET":
+            await updateCampaignDailyBudget(
+              c.id,
+              Math.round(c.dailyBudget * (1 + pct / 100)),
+            );
+            break;
+          case "DECREASE_BUDGET":
+            await updateCampaignDailyBudget(
+              c.id,
+              Math.round(c.dailyBudget * (1 - pct / 100)),
+            );
+            break;
+          case "NOTIFY":
+            break;
+        }
+      });
       if (rule) rule.lastTriggered = new Date().toISOString();
       setCooldown(key);
       applied.push(e.message);

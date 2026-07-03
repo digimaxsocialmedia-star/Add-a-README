@@ -17,6 +17,13 @@ realistic **mock data** out of the box — no Meta account required — and uses
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
   conversions, with a 30-day spend/revenue/ROAS chart and a top-campaigns table.
+- **🗂 Multi ad account** — configure several ad accounts
+  (`META_AD_ACCOUNT_IDS=act_1:Label,act_2:Label` sharing one token), switch
+  between them from a dropdown in the top bar, and see an all-accounts overview
+  page (per-account spend/revenue/ROAS plus blended totals). Every account
+  keeps its own rules, schedules, targets, breakeven settings, and change
+  history. Demo mode ships two sample shops so the switcher works out of the
+  box.
 - **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d) with
   **period-over-period comparison** (each KPI shows % change vs. the previous
   window, color-coded by whether the move is good), per-campaign breakdown,
@@ -43,6 +50,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
 - **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
   CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
   refreshing or pausing before budget is wasted.
+- **👁 AI creative scoring** — upload an ad image (optionally with its headline
+  and primary text) and Claude vision grades it 0-100 across 6 fixed criteria
+  (hook, text-on-image ratio, CTA, color/contrast, image quality, mobile fit)
+  with concrete fix-it suggestions — before any money is spent. Falls back to a
+  manual pre-flight checklist when no API key is configured.
 - **🧪 A/B creative testing** — pick any two ads and get a real statistical
   answer instead of eyeballing: two-proportion z-tests on CTR and conversion
   rate, a confidence meter with 80%/95% markers, a Vietnamese verdict
@@ -72,12 +84,18 @@ realistic **mock data** out of the box — no Meta account required — and uses
   (shift budget to winners, cut losers, keeping total ~constant), **scheduled
   auto-run** of rules (with per-campaign cooldowns to avoid runaway budgets), and
   an **activity log** of every autonomous action.
+- **⏪ Change history + undo** — every write (status toggles, budget changes —
+  whether made by you, an automation rule, dayparting, or the budget optimizer)
+  is recorded at the data-layer facade with before/after values and the actor
+  who caused it. One-click undo restores the previous value through the same
+  facade, and the undo itself is recorded too.
 - **✨ AI Insights** — Claude (`claude-opus-4-8`) audits the account and returns
   prioritized, actionable recommendations.
 
-> The two AI features (AI Insights, Creative Studio copywriting) call Claude when
-> `ANTHROPIC_API_KEY` is set and fall back to a built-in heuristic engine
-> otherwise, so every feature works out of the box.
+> The AI features (AI Insights, Creative Studio copywriting, audience ideas,
+> and vision creative scoring) call Claude when `ANTHROPIC_API_KEY` is set and
+> fall back to a built-in heuristic engine (or a manual checklist, for image
+> scoring) otherwise, so every feature works out of the box.
 
 ## Tech stack
 
@@ -100,8 +118,9 @@ Open http://localhost:3000.
 | Variable               | Required | Purpose                                                                           |
 | ---------------------- | -------- | --------------------------------------------------------------------------------- |
 | `ANTHROPIC_API_KEY`    | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
-| `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` to switch to **live** Meta API mode.        |
+| `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` (or `META_AD_ACCOUNT_IDS`) to switch to **live** Meta API mode. |
 | `META_AD_ACCOUNT_ID`   | No       | Ad account id, e.g. `act_1234567890`.                                              |
+| `META_AD_ACCOUNT_IDS`  | No       | Multi-account list: `act_1:Label A,act_2:Label B` (labels optional; one shared token). |
 | `META_API_VERSION`     | No       | Graph API version (default `v23.0`).                                               |
 | `META_INSIGHTS_DATE_PRESET` | No  | Reporting window (default `last_30d`).                                             |
 | `META_CONVERSION_ACTION_TYPE` | No | Override which insights action type counts as a conversion/revenue.             |
@@ -113,12 +132,14 @@ See the "Demo mode vs. Live mode" section below for full details.
 ```
 app/
   page.tsx              Dashboard
+  accounts/             Multi-account overview + switcher
   reports/              Reports & alerts
   audit/                Account audit
   campaigns/            Campaign list
   manager/              Ads Manager (3-level editor)
   create/               Create-ads wizard
   creatives/            Creative Studio + AI copywriting
+  creative-score/       AI creative scoring (Claude vision, 6 criteria)
   abtest/               A/B creative testing (z-test + verdict)
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
@@ -126,6 +147,7 @@ app/
   schedule/             Dayparting (7×24 hour grid per campaign)
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
+  history/              Change history + one-click undo
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
   api/                  Route handlers (campaigns, manager, automation,
@@ -150,9 +172,12 @@ lib/
   pacing/engine.ts      Monthly budget pacing vs. targets
   breakeven/engine.ts   Breakeven thresholds + campaign profit grading
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
+  history/engine.ts     Change recording (at the client.ts facade) + actor context
+  history/undo.ts       One-click undo (restores the before-value)
   report/compare.ts     Period-over-period KPI comparison
   audiences/classify.ts Audience-type classification
-  ai/claude.ts          Claude calls (insights + ad copy + audiences) + fallbacks
+  ai/claude.ts          Claude calls (insights + ad copy + audiences +
+                        vision creative scoring) + fallbacks
   report/email.ts       HTML email report builder + SMTP sender
   notify/channels.ts    Telegram + Zalo OA senders
   alerts/notify.ts      Instant-alert runner (new-alert de-dupe)
