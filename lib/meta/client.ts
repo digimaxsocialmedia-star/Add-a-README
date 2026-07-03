@@ -12,12 +12,19 @@
 // exported here, so neither mode leaks into the rest of the app.
 // -----------------------------------------------------------------------------
 
-import { getAccountLabel, getMode, isLiveMode } from "./config";
+import {
+  getAccountLabel,
+  getActiveAccountId,
+  getMode,
+  isLiveMode,
+  listAccounts,
+} from "./config";
 import { derive, sumMetrics } from "../format";
 import { classifyAudience } from "../audiences/classify";
 import { recordHistory } from "../history/engine";
 import { getStore } from "../mock/store";
 import type {
+  AccountOverview,
   AccountSummary,
   AdFatigue,
   AdRow,
@@ -36,7 +43,20 @@ import * as live from "./graph";
 export type { NewCampaignInput };
 export { getAccountLabel, getMode, isLiveMode };
 
-export const ACCOUNT_NAME = getAccountLabel();
+/** Tổng quan mọi tài khoản đã cấu hình (chi tiêu, doanh thu, ROAS, số camp) —
+ *  demo: đọc từng store; live: gọi insights cho từng act_… song song. */
+export async function getAccountsOverview(): Promise<AccountOverview[]> {
+  const activeId = getActiveAccountId();
+  return Promise.all(
+    listAccounts().map(async (a) => ({
+      ...a,
+      active: a.id === activeId,
+      summary: isLiveMode()
+        ? await live.getAccountSummaryLive(a.id)
+        : await mock.getAccountSummaryMock(a.id),
+    })),
+  );
+}
 
 /** Tra cứu tên + giá trị hiện tại trong store demo — để ghi lịch sử có
  *  "giá trị trước" chính xác. Ở live mode trả undefined (không đọc thêm API). */

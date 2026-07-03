@@ -17,6 +17,13 @@ realistic **mock data** out of the box — no Meta account required — and uses
 
 - **📊 Analytics dashboard** — account-level spend, revenue, ROAS, CTR, CPC and
   conversions, with a 30-day spend/revenue/ROAS chart and a top-campaigns table.
+- **🗂 Multi ad account** — configure several ad accounts
+  (`META_AD_ACCOUNT_IDS=act_1:Label,act_2:Label` sharing one token), switch
+  between them from a dropdown in the top bar, and see an all-accounts overview
+  page (per-account spend/revenue/ROAS plus blended totals). Every account
+  keeps its own rules, schedules, targets, breakeven settings, and change
+  history. Demo mode ships two sample shops so the switcher works out of the
+  box.
 - **📑 Reports & Alerts** — re-windowable KPIs (7/14/30d) with
   **period-over-period comparison** (each KPI shows % change vs. the previous
   window, color-coded by whether the move is good), per-campaign breakdown,
@@ -111,8 +118,9 @@ Open http://localhost:3000.
 | Variable               | Required | Purpose                                                                           |
 | ---------------------- | -------- | --------------------------------------------------------------------------------- |
 | `ANTHROPIC_API_KEY`    | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
-| `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` to switch to **live** Meta API mode.        |
+| `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` (or `META_AD_ACCOUNT_IDS`) to switch to **live** Meta API mode. |
 | `META_AD_ACCOUNT_ID`   | No       | Ad account id, e.g. `act_1234567890`.                                              |
+| `META_AD_ACCOUNT_IDS`  | No       | Multi-account list: `act_1:Label A,act_2:Label B` (labels optional; one shared token). |
 | `META_API_VERSION`     | No       | Graph API version (default `v23.0`).                                               |
 | `META_INSIGHTS_DATE_PRESET` | No  | Reporting window (default `last_30d`).                                             |
 | `META_CONVERSION_ACTION_TYPE` | No | Override which insights action type counts as a conversion/revenue.             |
@@ -124,6 +132,7 @@ See the "Demo mode vs. Live mode" section below for full details.
 ```
 app/
   page.tsx              Dashboard
+  accounts/             Multi-account overview + switcher
   reports/              Reports & alerts
   audit/                Account audit
   campaigns/            Campaign list

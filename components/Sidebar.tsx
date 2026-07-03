@@ -22,10 +22,12 @@ import {
   FlaskConical,
   ScanEye,
   History,
+  Building2,
 } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/accounts", label: "Đa tài khoản", icon: Building2 },
   { href: "/reports", label: "Báo cáo & Cảnh báo", icon: FileBarChart },
   { href: "/audit", label: "Đánh giá tài khoản", icon: ShieldCheck },
   { href: "/campaigns", label: "Chiến dịch", icon: Megaphone },

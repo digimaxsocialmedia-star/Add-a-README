@@ -1,7 +1,7 @@
 // Demo-mode implementation backing lib/meta/client.ts when Meta credentials
 // are absent. Backed by the deterministic in-memory store (lib/mock/store.ts).
 
-import { getStore } from "../mock/store";
+import { getStore, getStoreFor } from "../mock/store";
 import { derive, emptyMetrics, sumMetrics } from "../format";
 import { classifyFatigue } from "../fatigue/engine";
 import type {
@@ -23,8 +23,10 @@ export async function getCampaignsMock(): Promise<CampaignWithMetrics[]> {
   return getStore().campaigns.map(withMetrics);
 }
 
-export async function getAccountSummaryMock(): Promise<AccountSummary> {
-  const campaigns = getStore().campaigns;
+export async function getAccountSummaryMock(
+  accountId?: string,
+): Promise<AccountSummary> {
+  const campaigns = (accountId ? getStoreFor(accountId) : getStore()).campaigns;
   const active = campaigns.filter((c) => c.status === "ACTIVE");
   const metrics = derive(sumMetrics(active.flatMap((c) => c.daily)));
   return {

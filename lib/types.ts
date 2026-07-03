@@ -92,6 +92,18 @@ export interface AccountSummary {
   totalCampaigns: number;
 }
 
+// ---- Đa tài khoản quảng cáo ----
+
+export interface AdAccountInfo {
+  id: string; // act_… (live) hoặc demo_… (demo)
+  label: string;
+}
+
+export interface AccountOverview extends AdAccountInfo {
+  active: boolean; // đang là tài khoản được chọn
+  summary: AccountSummary;
+}
+
 export interface NewCampaignInput {
   name: string;
   objective: Objective;
