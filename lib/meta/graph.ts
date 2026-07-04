@@ -20,6 +20,7 @@ import type {
   CampaignWithMetrics,
   CreateCampaignResult,
   DerivedMetrics,
+  HourCell,
   Metrics,
   NewCampaignInput,
   Objective,
@@ -402,6 +403,56 @@ export async function getAdsLive(): Promise<AdRow[]> {
       metrics: derive(insightsByAd.get(a.id) ?? empty()),
     };
   });
+}
+
+/**
+ * Hiệu suất theo 7 ngày × 24 giờ từ breakdown
+ * `hourly_stats_aggregated_by_advertiser_time_zone` (giờ theo múi giờ của
+ * tài khoản quảng cáo) + time_increment=1 để suy ra thứ trong tuần từ ngày.
+ */
+export async function getHourlyCellsLive(): Promise<HourCell[]> {
+  const { adAccountId, datePreset } = getMetaConfig();
+  const rows = await graphGetAll<
+    InsightRow & { hourly_stats_aggregated_by_advertiser_time_zone?: string }
+  >(
+    `${adAccountId}/insights`,
+    {
+      fields: INSIGHT_FIELDS,
+      date_preset: datePreset,
+      time_increment: "1",
+      breakdowns: "hourly_stats_aggregated_by_advertiser_time_zone",
+      limit: "500",
+    },
+    20,
+  );
+
+  const map = new Map<string, HourCell>();
+  for (const row of rows) {
+    const hr = row.hourly_stats_aggregated_by_advertiser_time_zone; // "13:00:00 - 13:59:59"
+    if (!hr || !row.date_start) continue;
+    const hour = Number(hr.slice(0, 2));
+    if (!Number.isFinite(hour) || hour < 0 || hour > 23) continue;
+    const jsDay = new Date(`${row.date_start}T00:00:00Z`).getUTCDay(); // 0 = CN
+    const day = (jsDay + 6) % 7; // 0 = Thứ 2
+    const m = rowToMetrics(row);
+    const key = `${day}-${hour}`;
+    const cell =
+      map.get(key) ?? { day, hour, spend: 0, revenue: 0, conversions: 0 };
+    cell.spend += m.spend;
+    cell.revenue += m.revenue;
+    cell.conversions += m.conversions;
+    map.set(key, cell);
+  }
+
+  const out: HourCell[] = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      out.push(
+        map.get(`${d}-${h}`) ?? { day: d, hour: h, spend: 0, revenue: 0, conversions: 0 },
+      );
+    }
+  }
+  return out;
 }
 
 export async function setCampaignStatusLive(

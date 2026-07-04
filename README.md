@@ -71,6 +71,12 @@ realistic **mock data** out of the box — no Meta account required — and uses
   %, and the app derives *your* max allowed CPA and breakeven ROAS, grades
   every campaign Lãi / Sát hòa vốn / Lỗ against those thresholds, and estimates
   net profit per campaign (revenue × margin − ad spend).
+- **⏰ Golden hours** — a 7×24 ROAS heatmap from hourly-breakdown insights
+  (advertiser timezone) showing which hours make money and which burn it, top
+  best/worst hour rankings, an estimated-savings card, and a data-driven
+  suggested dayparting grid (keeps low-data hours on, cuts only hours with
+  clear evidence: enough spend and ROAS < 60% of account average) that can be
+  applied to one or all campaigns' schedules in one click.
 - **🕐 Dayparting** — per-campaign hour-of-day / day-of-week schedules on a
   7×24 click-and-drag grid (Vietnam time). Campaigns auto-activate inside the
   chosen hours and auto-pause outside them; presets for "golden hours 8-23h",
@@ -152,6 +158,7 @@ app/
   audiences/            Audience Studio + AI audience ideas
   pacing/               Budget pacing vs. monthly targets
   breakeven/            Breakeven CPA/ROAS + est. profit per campaign
+  hourly/               Golden hours (ROAS heatmap + suggested grid)
   schedule/             Dayparting (7×24 hour grid per campaign)
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
@@ -181,6 +188,7 @@ lib/
   pacing/engine.ts      Monthly budget pacing vs. targets
   breakeven/engine.ts   Breakeven thresholds + campaign profit grading
   dayparting/engine.ts  Hour-of-day schedules (VN time) → pause/activate
+  hourly/engine.ts      Hour-of-week analysis → suggested dayparting grid
   history/engine.ts     Change recording (at the client.ts facade) + actor context
   history/undo.ts       One-click undo (restores the before-value)
   report/compare.ts     Period-over-period KPI comparison

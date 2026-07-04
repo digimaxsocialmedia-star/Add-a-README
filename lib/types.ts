@@ -473,6 +473,38 @@ export interface DaypartSchedule {
   grid: number[][];
 }
 
+// ---- Giờ vàng (phân tích hiệu suất theo khung giờ) ----
+
+export interface HourCell {
+  day: number; // 0 = Thứ 2 … 6 = Chủ nhật
+  hour: number; // 0-23
+  spend: number;
+  revenue: number;
+  conversions: number;
+}
+
+export interface HourStat {
+  hour: number;
+  spend: number;
+  revenue: number;
+  roas: number;
+}
+
+export interface HourlyAnalysis {
+  cells: HourCell[]; // 168 ô (7 ngày × 24 giờ)
+  totalSpend: number;
+  accountRoas: number;
+  /** Lưới 7×24 đề xuất cho Lịch chạy theo giờ (1 = nên chạy). */
+  grid: number[][];
+  hourStats: HourStat[]; // tổng hợp 24 giờ (gộp các ngày)
+  bestHours: HourStat[]; // top khung giờ hiệu quả (đủ chi tiêu)
+  worstHours: HourStat[]; // khung giờ đốt tiền kém nhất (đủ chi tiêu)
+  offCount: number; // số ô đề xuất tắt
+  /** Phần chi tiêu/doanh thu nằm trong các ô đề xuất tắt. */
+  savings: { spend: number; revenue: number; roas: number };
+  note?: string;
+}
+
 // ---- Budget pacing (kiểm soát ngân sách theo mục tiêu tháng) ----
 
 export interface MonthlyTargets {

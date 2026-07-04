@@ -2,7 +2,8 @@
 // are absent. Backed by the deterministic in-memory store (lib/mock/store.ts).
 
 import { getStore, getStoreFor } from "../mock/store";
-import { derive, emptyMetrics, sumMetrics } from "../format";
+import { getActiveAccountId } from "./config";
+import { derive, emptyMetrics, round2, sumMetrics } from "../format";
 import { classifyFatigue } from "../fatigue/engine";
 import type {
   AccountSummary,
@@ -11,6 +12,7 @@ import type {
   Campaign,
   CampaignWithMetrics,
   CreateCampaignResult,
+  HourCell,
   NewCampaignInput,
   SeriesPoint,
 } from "../types";
@@ -259,6 +261,61 @@ function rngFrom(seed: number) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// ---- Giờ vàng (demo) --------------------------------------------------------
+// Sinh hiệu suất 7×24 tất định theo nhịp sinh hoạt VN: đêm khuya yếu, trưa và
+// tối 19-22h là đỉnh; cuối tuần lưu lượng cao hơn nhưng hiệu quả nhỉnh xuống.
+// Tổng chi/doanh thu được neo đúng bằng số liệu 30 ngày của tài khoản.
+
+// Trọng số lưu lượng theo giờ (0h → 23h).
+const HOUR_TRAFFIC = [
+  0.15, 0.1, 0.08, 0.08, 0.1, 0.15, 0.3, 0.5, 0.7, 0.85, 0.9, 1.0,
+  1.05, 0.95, 0.85, 0.8, 0.85, 0.95, 1.1, 1.25, 1.35, 1.3, 1.0, 0.5,
+];
+// Hệ số hiệu quả (ROAS tương đối) theo giờ — đêm khuya đốt tiền kém.
+const HOUR_EFF = [
+  0.35, 0.3, 0.3, 0.35, 0.4, 0.5, 0.7, 0.85, 0.95, 1.0, 1.05, 1.1,
+  1.0, 0.95, 0.9, 0.9, 0.95, 1.0, 1.1, 1.2, 1.25, 1.15, 0.9, 0.6,
+];
+const DAY_TRAFFIC = [1, 1, 1, 1, 1.05, 1.15, 1.1]; // T2 → CN
+const DAY_EFF = [1, 1, 1.02, 1, 1.05, 0.95, 0.9];
+
+export async function getHourlyCellsMock(): Promise<HourCell[]> {
+  const campaigns = getStore().campaigns.filter((c) => c.status === "ACTIVE");
+  const totals = sumMetrics(campaigns.flatMap((c) => c.daily));
+  const rng = rngFrom(seedFromId(`${getActiveAccountId()}-hourly`));
+
+  // Trọng số + hiệu quả từng ô (kèm nhiễu tất định ±15%).
+  const raw = [] as Array<{ day: number; hour: number; w: number; eff: number }>;
+  for (let day = 0; day < 7; day++) {
+    for (let hour = 0; hour < 24; hour++) {
+      raw.push({
+        day,
+        hour,
+        w: HOUR_TRAFFIC[hour] * DAY_TRAFFIC[day] * (0.85 + rng() * 0.3),
+        eff: HOUR_EFF[hour] * DAY_EFF[day] * (0.85 + rng() * 0.3),
+      });
+    }
+  }
+  const wSum = raw.reduce((s, c) => s + c.w, 0);
+  // Chuẩn hóa doanh thu để tổng khớp đúng doanh thu thật của tài khoản.
+  const revRawSum = raw.reduce((s, c) => s + c.w * c.eff, 0);
+  const revScale = revRawSum > 0 ? totals.revenue / revRawSum : 0;
+
+  return raw.map((c) => {
+    const spend = (totals.spend * c.w) / wSum;
+    const revenue = c.w * c.eff * revScale;
+    return {
+      day: c.day,
+      hour: c.hour,
+      spend: round2(spend),
+      revenue: round2(revenue),
+      conversions: Math.round(
+        totals.revenue > 0 ? (totals.conversions * revenue) / totals.revenue : 0,
+      ),
+    };
+  });
 }
 
 export async function getAdFatigueMock(): Promise<AdFatigue[]> {

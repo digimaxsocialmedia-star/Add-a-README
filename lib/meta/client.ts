@@ -31,6 +31,7 @@ import type {
   AudienceRow,
   CampaignWithMetrics,
   CreateCampaignResult,
+  HourCell,
   ManagerAdSet,
   ManagerCampaign,
   Metrics,
@@ -160,6 +161,10 @@ export function getAds(): Promise<AdRow[]> {
 
 export function getAdFatigue(): Promise<AdFatigue[]> {
   return isLiveMode() ? live.getAdFatigueLive() : mock.getAdFatigueMock();
+}
+
+export function getHourlyCells(): Promise<HourCell[]> {
+  return isLiveMode() ? live.getHourlyCellsLive() : mock.getHourlyCellsMock();
 }
 
 export async function setAdSetStatus(
