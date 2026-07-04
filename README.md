@@ -84,6 +84,12 @@ realistic **mock data** out of the box — no Meta account required — and uses
   (shift budget to winners, cut losers, keeping total ~constant), **scheduled
   auto-run** of rules (with per-campaign cooldowns to avoid runaway budgets), and
   an **activity log** of every autonomous action.
+- **🔌 Settings & connections** — one page showing the status of every
+  integration (Meta token + per-account access/currency/status, Claude key,
+  SMTP, Telegram bot, Zalo OA, app password, persistence dir) with a
+  "test connection" button per service using the lightest possible call — no
+  messages sent, no AI tokens spent. Warns loudly when live mode runs without
+  a password, and when a VND account is missing `META_CURRENCY_OFFSET=1`.
 - **⏪ Change history + undo** — every write (status toggles, budget changes —
   whether made by you, an automation rule, dayparting, or the budget optimizer)
   is recorded at the data-layer facade with before/after values and the actor
@@ -150,6 +156,7 @@ app/
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
   history/              Change history + one-click undo
+  settings/             Connection status + per-service tests
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
   api/                  Route handlers (campaigns, manager, automation,
