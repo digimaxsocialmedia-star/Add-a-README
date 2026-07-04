@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStore, addLog } from "@/lib/mock/store";
+import { getStore, addLog, schedulePersist } from "@/lib/mock/store";
 import { getCampaigns } from "@/lib/meta/client";
 import { runAutomationRules } from "@/lib/automation/run";
 import { runAlertNotifications } from "@/lib/alerts/notify";
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
 
   if (body.op === "setInterval" && body.intervalMinutes) {
     store.settings.intervalMinutes = Math.max(1, Number(body.intervalMinutes));
+    schedulePersist();
     return NextResponse.json(state());
   }
 

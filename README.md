@@ -117,6 +117,8 @@ Open http://localhost:3000.
 
 | Variable               | Required | Purpose                                                                           |
 | ---------------------- | -------- | --------------------------------------------------------------------------------- |
+| `APP_PASSWORD`         | No*      | Locks every page + API behind a login (30-day cookie). *Strongly recommended in live mode — the app controls real ad spend. |
+| `ADPILOT_DATA_DIR`     | No       | Where app state (`state.json`) is persisted. Default `.data/`.                     |
 | `ANTHROPIC_API_KEY`    | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
 | `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` (or `META_AD_ACCOUNT_IDS`) to switch to **live** Meta API mode. |
 | `META_AD_ACCOUNT_ID`   | No       | Ad account id, e.g. `act_1234567890`.                                              |
@@ -291,7 +293,24 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | `npm run lint`     | Lint                         |
 | `npm run typecheck`| TypeScript type-check        |
 
+## Production hardening
+
+- **Persistence** — app state (automation rules, autopilot settings, daypart
+  schedules, monthly targets, breakeven settings, change history, activity log,
+  alert de-dupe, active account) is saved to `ADPILOT_DATA_DIR/state.json`
+  (default `.data/`, debounced writes, atomic rename) and restored on startup.
+  Demo *campaign data* still regenerates on restart (deterministic ids, so
+  restored rules/history stay consistent). On serverless hosts (Vercel) the
+  filesystem is ephemeral — run on a VPS/container with a persistent disk, or
+  mount `ADPILOT_DATA_DIR` on a volume.
+- **Authentication** — set `APP_PASSWORD` and every page and API route requires
+  login at `/login` (SHA-256 cookie, 30 days, httpOnly). Without it the app is
+  open — fine for a local demo, never for live mode.
+- **Mobile** — a fixed top bar with a drawer menu replaces the sidebar below
+  the `lg` breakpoint, so the app is fully navigable on phones.
+
 ## Notes & limitations
 
-- Mock data lives in memory and resets when the server restarts.
-- This is a demo: it does not place real ad spend or call Meta.
+- Demo campaign data regenerates on restart; app settings/history persist (see
+  Production hardening above).
+- Demo mode does not place real ad spend or call Meta.

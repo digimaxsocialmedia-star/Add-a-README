@@ -8,7 +8,7 @@
 // là người dùng.
 // -----------------------------------------------------------------------------
 
-import { getStore } from "../mock/store";
+import { getStore, schedulePersist } from "../mock/store";
 import type { HistoryActor, HistoryEntry } from "../types";
 
 const MAX_ENTRIES = 100;
@@ -43,4 +43,5 @@ export function recordHistory(
     ...entry,
   });
   store.history = store.history.slice(0, MAX_ENTRIES);
+  schedulePersist();
 }

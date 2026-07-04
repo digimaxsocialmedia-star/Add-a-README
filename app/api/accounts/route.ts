@@ -6,6 +6,7 @@ import {
   listAccounts,
   setActiveAccount,
 } from "@/lib/meta/config";
+import { ensureHydrated, schedulePersist } from "@/lib/mock/store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ async function payload() {
 // GET /api/accounts          → tổng quan đầy đủ (kèm chi tiêu/ROAS từng TK)
 // GET /api/accounts?light=1  → chỉ danh sách + TK đang chọn (cho TopBar)
 export async function GET(req: Request) {
+  ensureHydrated(); // khôi phục tài khoản đang chọn từ đĩa sau khi restart
   const light = new URL(req.url).searchParams.get("light");
   if (light) {
     return NextResponse.json({
@@ -40,12 +42,14 @@ export async function POST(req: Request) {
   }
 
   if (body.op === "switch" && body.id) {
+    ensureHydrated();
     if (!setActiveAccount(body.id)) {
       return NextResponse.json(
         { error: "Tài khoản không nằm trong danh sách đã cấu hình." },
         { status: 400 },
       );
     }
+    schedulePersist();
     return NextResponse.json(await payload());
   }
 

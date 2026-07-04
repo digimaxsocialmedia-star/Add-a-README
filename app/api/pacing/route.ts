@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDailySeries } from "@/lib/meta/client";
 import { getMode } from "@/lib/meta/config";
-import { getStore } from "@/lib/mock/store";
+import { getStore, schedulePersist } from "@/lib/mock/store";
 import { computePacing } from "@/lib/pacing/engine";
 
 export const dynamic = "force-dynamic";
@@ -32,5 +32,6 @@ export async function POST(req: Request) {
   if (typeof body.monthlyRevenue === "number" && body.monthlyRevenue >= 0) {
     store.targets.monthlyRevenue = Math.round(body.monthlyRevenue);
   }
+  schedulePersist();
   return NextResponse.json(await payload());
 }

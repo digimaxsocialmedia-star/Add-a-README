@@ -3,7 +3,7 @@ import { getCampaigns } from "@/lib/meta/client";
 import { evaluate } from "@/lib/automation/engine";
 import { runAutomationRules } from "@/lib/automation/run";
 import { suggestThresholds } from "@/lib/automation/thresholds";
-import { getStore } from "@/lib/mock/store";
+import { getStore, schedulePersist } from "@/lib/mock/store";
 import type { AutomationRule } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
     const rule = store.rules.find((r) => r.id === body.id);
     if (!rule) return NextResponse.json({ error: "Không tìm thấy quy tắc" }, { status: 404 });
     rule.enabled = !rule.enabled;
+    schedulePersist();
     return NextResponse.json(await snapshot());
   }
 
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       adjustPct: r.adjustPct != null ? Number(r.adjustPct) : undefined,
     };
     store.rules.push(rule);
+    schedulePersist();
     return NextResponse.json(await snapshot());
   }
 

@@ -11,7 +11,7 @@ import {
   updateAdSetDailyBudget,
   updateCampaignDailyBudget,
 } from "../meta/client";
-import { getStore } from "../mock/store";
+import { getStore, schedulePersist } from "../mock/store";
 import type { EntityStatus } from "../types";
 
 export async function undoEntry(
@@ -48,5 +48,6 @@ export async function undoEntry(
   }
 
   entry.undoneAt = new Date().toISOString();
+  schedulePersist();
   return { ok: true, message: `Đã hoàn tác thay đổi trên "${name}".` };
 }

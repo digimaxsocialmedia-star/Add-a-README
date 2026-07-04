@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCampaigns } from "@/lib/meta/client";
 import { getMode } from "@/lib/meta/config";
-import { getStore } from "@/lib/mock/store";
+import { getStore, schedulePersist } from "@/lib/mock/store";
 import {
   normalizeGrid,
   nowInScheduleTz,
@@ -61,17 +61,20 @@ export async function POST(req: Request) {
       enabled: body.enabled !== false,
       grid: normalizeGrid(body.grid),
     };
+    schedulePersist();
     return NextResponse.json(await state());
   }
 
   if (body.op === "toggle" && body.campaignId) {
     const s = store.schedules[body.campaignId];
     if (s) s.enabled = !s.enabled;
+    schedulePersist();
     return NextResponse.json(await state());
   }
 
   if (body.op === "delete" && body.campaignId) {
     delete store.schedules[body.campaignId];
+    schedulePersist();
     return NextResponse.json(await state());
   }
 
