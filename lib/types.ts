@@ -311,7 +311,7 @@ export interface AudienceIdeaResult {
 export interface LogEntry {
   id: string;
   at: string; // ISO
-  kind: "rule" | "optimizer" | "daypart" | "info";
+  kind: "rule" | "optimizer" | "daypart" | "fatigue" | "info";
   message: string;
   campaignName?: string;
 }
@@ -361,6 +361,13 @@ export interface AdFatigue {
   recommendation: string;
 }
 
+/** Cài đặt tự tạm dừng quảng cáo "chai". */
+export interface FatigueAutoSettings {
+  enabled: boolean;
+  /** Điểm chai tối thiểu để tự tạm dừng (50 = ngưỡng "Chai nặng"). */
+  minScore: number;
+}
+
 // ---- Lịch sử thay đổi + hoàn tác ----
 
 export type HistoryAction =
@@ -372,8 +379,8 @@ export type HistoryAction =
   | "campaign_created"
   | "campaign_duplicated";
 
-/** Ai gây ra thay đổi: người dùng, quy tắc tự động, lịch chạy giờ, hay tối ưu NS. */
-export type HistoryActor = "user" | "rule" | "daypart" | "optimizer";
+/** Ai gây ra thay đổi: người dùng, quy tắc, lịch chạy giờ, tối ưu NS, hay chống chai. */
+export type HistoryActor = "user" | "rule" | "daypart" | "optimizer" | "fatigue";
 
 export interface HistoryEntry {
   id: string;

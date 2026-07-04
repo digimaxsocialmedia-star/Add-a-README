@@ -4,6 +4,7 @@ import { getCampaigns } from "@/lib/meta/client";
 import { runAutomationRules } from "@/lib/automation/run";
 import { runAlertNotifications } from "@/lib/alerts/notify";
 import { runDayparting } from "@/lib/dayparting/engine";
+import { runFatigueAutopause } from "@/lib/fatigue/autopause";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,12 @@ export async function POST(req: Request) {
     }
     const rules = await runAutomationRules("auto", campaigns);
     applied.push(...rules.applied);
+    // Tự tạm dừng quảng cáo "chai" (nếu người dùng bật) — không chặn tick.
+    try {
+      applied.push(...(await runFatigueAutopause()));
+    } catch {
+      /* bỏ qua lỗi quét độ chai */
+    }
     // Đẩy cảnh báo mới qua Telegram/Zalo (nếu có cấu hình) — không chặn tick.
     try {
       await runAlertNotifications(false, campaigns);

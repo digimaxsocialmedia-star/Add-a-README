@@ -1,5 +1,6 @@
 import { Flame, HeartPulse, AlertTriangle, Ban } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
+import { FatigueAutoPanel } from "@/components/FatigueAutoPanel";
 import { getAdFatigue } from "@/lib/meta/client";
 import { pct } from "@/lib/format";
 import { CREATIVE_TYPE_LABELS } from "@/lib/types";
@@ -100,6 +101,8 @@ export default async function FatiguePage() {
             </div>
           </div>
         </div>
+
+        <FatigueAutoPanel />
 
         {counts.fatigued > 0 ? (
           <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">

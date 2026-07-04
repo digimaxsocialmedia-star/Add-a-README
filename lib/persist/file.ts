@@ -20,6 +20,7 @@ import type {
   AutopilotSettings,
   BreakevenSettings,
   DaypartSchedule,
+  FatigueAutoSettings,
   HistoryEntry,
   LogEntry,
   MonthlyTargets,
@@ -37,6 +38,8 @@ export interface PersistedAccountState {
   schedules: Record<string, DaypartSchedule>;
   breakeven: BreakevenSettings;
   history: HistoryEntry[];
+  /** Có thể vắng trong file cũ — store giữ mặc định khi thiếu. */
+  fatigueAuto?: FatigueAutoSettings;
 }
 
 export interface PersistedFile {

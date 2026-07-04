@@ -7,6 +7,7 @@ import type {
   Campaign,
   DailyPoint,
   DaypartSchedule,
+  FatigueAutoSettings,
   HistoryEntry,
   LogEntry,
   Metrics,
@@ -378,6 +379,7 @@ export interface Store {
   schedules: Record<string, DaypartSchedule>; // lịch chạy theo giờ (campaignId → lịch)
   breakeven: BreakevenSettings; // đơn giá + cơ cấu chi phí để tính điểm hòa vốn
   history: HistoryEntry[]; // lịch sử thay đổi (mới nhất trước)
+  fatigueAuto: FatigueAutoSettings; // tự tạm dừng quảng cáo "chai"
 }
 
 function createStore(accountId: string): Store {
@@ -396,6 +398,8 @@ function createStore(accountId: string): Store {
     // Mặc định: đơn 800k, giá vốn 40%, phí 15% → biên lãi 45%.
     breakeven: { aov: 800_000, cogsPct: 40, feesPct: 15 },
     history: [],
+    // Mặc định TẮT — người dùng chủ động bật ở trang Độ chai nội dung.
+    fatigueAuto: { enabled: false, minScore: 50 },
   };
 }
 
@@ -468,6 +472,7 @@ function appState(s: Store): PersistedAccountState {
     schedules: s.schedules,
     breakeven: s.breakeven,
     history: s.history,
+    fatigueAuto: s.fatigueAuto,
   };
 }
 

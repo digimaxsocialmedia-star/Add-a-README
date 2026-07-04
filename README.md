@@ -49,7 +49,11 @@ realistic **mock data** out of the box — no Meta account required — and uses
   rankings, and an AI ad-copy generator (Claude, with heuristic fallback).
 - **🔥 Ad fatigue** — flags creatives wearing out (rising frequency + falling
   CTR over time), scores each ad Khỏe / Bắt đầu chai / Chai nặng, and recommends
-  refreshing or pausing before budget is wasted.
+  refreshing or pausing before budget is wasted. **Auto-pause** closes the
+  loop: opt in and every Autopilot tick pauses ads above your fatigue-score
+  threshold (max once per ad per 24h so manual re-activations stick; every
+  action lands in the change history and is undoable), or run a one-off sweep
+  from the fatigue page.
 - **👁 AI creative scoring** — upload an ad image (optionally with its headline
   and primary text) and Claude vision grades it 0-100 across 6 fixed criteria
   (hook, text-on-image ratio, CTA, color/contrast, image quality, mobile fit)
@@ -184,6 +188,7 @@ lib/
   audit/engine.ts       Account health scoring
   alerts/engine.ts      Anomaly detection
   fatigue/engine.ts     Ad-fatigue scoring (frequency + CTR trend)
+  fatigue/autopause.ts  Auto-pause fatigued ads (threshold + 24h cooldown)
   abtest/engine.ts      Two-proportion z-tests + verdict copy
   pacing/engine.ts      Monthly budget pacing vs. targets
   breakeven/engine.ts   Breakeven thresholds + campaign profit grading

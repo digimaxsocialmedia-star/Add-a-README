@@ -11,6 +11,7 @@ const ACTOR_META: Record<HistoryActor, { label: string; cls: string }> = {
   rule: { label: "Quy tắc", cls: "bg-amber-50 text-amber-700" },
   daypart: { label: "Lịch chạy", cls: "bg-sky-50 text-sky-700" },
   optimizer: { label: "Tối ưu NS", cls: "bg-violet-50 text-violet-700" },
+  fatigue: { label: "Chống chai", cls: "bg-orange-50 text-orange-700" },
 };
 
 function describe(e: HistoryEntry): string {
