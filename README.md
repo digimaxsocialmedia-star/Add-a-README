@@ -84,6 +84,12 @@ realistic **mock data** out of the box — no Meta account required — and uses
   (shift budget to winners, cut losers, keeping total ~constant), **scheduled
   auto-run** of rules (with per-campaign cooldowns to avoid runaway budgets), and
   an **activity log** of every autonomous action.
+- **🔌 Settings & connections** — one page showing the status of every
+  integration (Meta token + per-account access/currency/status, Claude key,
+  SMTP, Telegram bot, Zalo OA, app password, persistence dir) with a
+  "test connection" button per service using the lightest possible call — no
+  messages sent, no AI tokens spent. Warns loudly when live mode runs without
+  a password, and when a VND account is missing `META_CURRENCY_OFFSET=1`.
 - **⏪ Change history + undo** — every write (status toggles, budget changes —
   whether made by you, an automation rule, dayparting, or the budget optimizer)
   is recorded at the data-layer facade with before/after values and the actor
@@ -117,6 +123,8 @@ Open http://localhost:3000.
 
 | Variable               | Required | Purpose                                                                           |
 | ---------------------- | -------- | --------------------------------------------------------------------------------- |
+| `APP_PASSWORD`         | No*      | Locks every page + API behind a login (30-day cookie). *Strongly recommended in live mode — the app controls real ad spend. |
+| `ADPILOT_DATA_DIR`     | No       | Where app state (`state.json`) is persisted. Default `.data/`.                     |
 | `ANTHROPIC_API_KEY`    | No       | Enables Claude-generated recommendations. Without it, a heuristic engine is used. |
 | `META_ACCESS_TOKEN`    | No       | Set together with `META_AD_ACCOUNT_ID` (or `META_AD_ACCOUNT_IDS`) to switch to **live** Meta API mode. |
 | `META_AD_ACCOUNT_ID`   | No       | Ad account id, e.g. `act_1234567890`.                                              |
@@ -148,6 +156,7 @@ app/
   automation/           Automation rules
   autopilot/            Autopilot: budget optimizer + scheduled runs + log
   history/              Change history + one-click undo
+  settings/             Connection status + per-service tests
   ai-insights/          AI recommendations
   error.tsx             Friendly error boundary
   api/                  Route handlers (campaigns, manager, automation,
@@ -291,7 +300,24 @@ mode leaks into the rest of the app. The sidebar/top bar show which mode is acti
 | `npm run lint`     | Lint                         |
 | `npm run typecheck`| TypeScript type-check        |
 
+## Production hardening
+
+- **Persistence** — app state (automation rules, autopilot settings, daypart
+  schedules, monthly targets, breakeven settings, change history, activity log,
+  alert de-dupe, active account) is saved to `ADPILOT_DATA_DIR/state.json`
+  (default `.data/`, debounced writes, atomic rename) and restored on startup.
+  Demo *campaign data* still regenerates on restart (deterministic ids, so
+  restored rules/history stay consistent). On serverless hosts (Vercel) the
+  filesystem is ephemeral — run on a VPS/container with a persistent disk, or
+  mount `ADPILOT_DATA_DIR` on a volume.
+- **Authentication** — set `APP_PASSWORD` and every page and API route requires
+  login at `/login` (SHA-256 cookie, 30 days, httpOnly). Without it the app is
+  open — fine for a local demo, never for live mode.
+- **Mobile** — a fixed top bar with a drawer menu replaces the sidebar below
+  the `lg` breakpoint, so the app is fully navigable on phones.
+
 ## Notes & limitations
 
-- Mock data lives in memory and resets when the server restarts.
-- This is a demo: it does not place real ad spend or call Meta.
+- Demo campaign data regenerates on restart; app settings/history persist (see
+  Production hardening above).
+- Demo mode does not place real ad spend or call Meta.

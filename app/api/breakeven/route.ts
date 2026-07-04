@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCampaigns } from "@/lib/meta/client";
 import { getMode } from "@/lib/meta/config";
-import { getStore } from "@/lib/mock/store";
+import { getStore, schedulePersist } from "@/lib/mock/store";
 import { campaignProfits, computeBreakeven } from "@/lib/breakeven/engine";
 
 export const dynamic = "force-dynamic";
@@ -37,5 +37,6 @@ export async function POST(req: Request) {
   if (typeof body.feesPct === "number" && body.feesPct >= 0 && body.feesPct <= 100) {
     s.feesPct = body.feesPct;
   }
+  schedulePersist();
   return NextResponse.json(await payload());
 }

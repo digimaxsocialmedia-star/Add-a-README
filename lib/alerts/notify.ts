@@ -1,7 +1,7 @@
 import { getCampaigns, getDailySeries } from "../meta/client";
 import { getAccountLabel } from "../meta/config";
 import { detectAlerts } from "./engine";
-import { getStore, addLog } from "../mock/store";
+import { getStore, addLog, schedulePersist } from "../mock/store";
 import {
   configuredChannels,
   notify,
@@ -113,4 +113,5 @@ export async function runAlertNotifications(
 
 export function resetNotified(): void {
   getStore().notifiedAlerts = {};
+  schedulePersist();
 }

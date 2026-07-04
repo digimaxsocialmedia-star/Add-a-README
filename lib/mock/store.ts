@@ -14,7 +14,13 @@ import type {
   Objective,
 } from "../types";
 import { round2 } from "../format";
-import { getActiveAccountId } from "../meta/config";
+import { getActiveAccountId, listAccounts } from "../meta/config";
+import {
+  loadPersisted,
+  savePersisted,
+  type PersistedAccountState,
+  type PersistedFile,
+} from "../persist/file";
 
 // -----------------------------------------------------------------------------
 // Deterministic mock data generator.
@@ -402,6 +408,7 @@ export function addLog(entry: Omit<LogEntry, "id" | "at">): void {
     ...entry,
   });
   store.log = store.log.slice(0, 60);
+  schedulePersist();
 }
 
 /** Trả về true nếu (rule,campaign) vừa được áp dụng trong `minutes` phút qua. */
@@ -413,6 +420,7 @@ export function onCooldown(key: string, minutes: number): boolean {
 
 export function setCooldown(key: string): void {
   getStore().cooldowns[key] = new Date().toISOString();
+  schedulePersist();
 }
 
 // Persist across hot reloads / route invocations within a single server
@@ -425,9 +433,79 @@ declare global {
   var __adpilotStores: Record<string, Store> | undefined;
 }
 
+// ---- Lưu trữ bền vững -------------------------------------------------------
+// Trạng thái ứng dụng (quy tắc, lịch, mục tiêu, lịch sử…) được nạp lại từ đĩa
+// khi tạo store và ghi xuống đĩa (debounce) sau mỗi thay đổi. Chiến dịch demo
+// không lưu — tự sinh lại tất định nên id (cmp_1…) vẫn khớp với lịch sử cũ.
+
+let persisted: PersistedFile | undefined;
+let persistedLoaded = false;
+
+/** Nạp file trạng thái đúng một lần; đồng thời khôi phục tài khoản đang chọn. */
+export function ensureHydrated(): void {
+  if (persistedLoaded) return;
+  persistedLoaded = true;
+  persisted = loadPersisted();
+  const savedActive = persisted?.activeAccountId;
+  if (
+    savedActive &&
+    !globalThis.__adpilotActiveAccount &&
+    listAccounts().some((a) => a.id === savedActive)
+  ) {
+    globalThis.__adpilotActiveAccount = savedActive;
+  }
+}
+
+function appState(s: Store): PersistedAccountState {
+  return {
+    seq: s.seq,
+    rules: s.rules,
+    settings: s.settings,
+    log: s.log,
+    cooldowns: s.cooldowns,
+    notifiedAlerts: s.notifiedAlerts,
+    targets: s.targets,
+    schedules: s.schedules,
+    breakeven: s.breakeven,
+    history: s.history,
+  };
+}
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Ghi trạng thái xuống đĩa sau 300ms (gộp nhiều thay đổi liên tiếp). */
+export function schedulePersist(): void {
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    const stores = globalThis.__adpilotStores ?? {};
+    const accounts: Record<string, PersistedAccountState> = {};
+    for (const [id, s] of Object.entries(stores)) accounts[id] = appState(s);
+    savePersisted({
+      version: 1,
+      savedAt: new Date().toISOString(),
+      activeAccountId: globalThis.__adpilotActiveAccount,
+      accounts,
+    });
+  }, 300);
+}
+
 export function getStoreFor(accountId: string): Store {
+  ensureHydrated();
   const stores = (globalThis.__adpilotStores ??= {});
-  return (stores[accountId] ??= createStore(accountId));
+  if (!stores[accountId]) {
+    const fresh = createStore(accountId);
+    const saved = persisted?.accounts?.[accountId];
+    if (saved) {
+      // Khôi phục phần trạng thái ứng dụng; giữ campaigns demo vừa sinh.
+      Object.assign(fresh, {
+        ...saved,
+        seq: Math.max(fresh.seq, saved.seq ?? 0),
+      } satisfies PersistedAccountState);
+    }
+    stores[accountId] = fresh;
+  }
+  return stores[accountId];
 }
 
 /** Store của tài khoản ĐANG CHỌN. */

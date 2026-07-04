@@ -53,7 +53,7 @@ async function readJson(res: Response): Promise<Json> {
   return data;
 }
 
-async function graphGet(path: string, params: Record<string, string>): Promise<Json> {
+export async function graphGet(path: string, params: Record<string, string>): Promise<Json> {
   const { accessToken } = getMetaConfig();
   const url = new URL(base(path));
   url.searchParams.set("access_token", accessToken);

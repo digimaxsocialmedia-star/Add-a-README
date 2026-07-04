@@ -19,7 +19,8 @@ export default function RootLayout({
       <body>
         <div className="flex min-h-screen">
           <Sidebar mode={getMode()} />
-          <main className="flex-1 lg:pl-64">{children}</main>
+          {/* pt-14: chừa chỗ cho thanh menu mobile cố định; desktop dùng sidebar */}
+          <main className="flex-1 pt-14 lg:pl-64 lg:pt-0">{children}</main>
         </div>
       </body>
     </html>
